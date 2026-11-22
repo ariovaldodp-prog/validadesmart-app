@@ -94,11 +94,24 @@
                 <!-- Ações Principais + Sino de Alertas -->
                 <div class="flex items-center gap-2 sm:gap-3">
                     <!-- Botão de Instalação Direta do App (PWA) -->
-                    <button id="btnInstallApp" onclick="installPWAApp()" class="inline-flex items-center gap-1.5 px-3 py-2 sm:py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs sm:text-sm font-semibold rounded-xl transition-all active:scale-95" title="Instalar aplicativo no celular">
+                    <button id="btnInstallApp" onclick="installPWAApp()" class="hidden inline-flex items-center gap-1.5 px-3 py-2 sm:py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs sm:text-sm font-semibold rounded-xl transition-all active:scale-95" title="Instalar aplicativo no celular">
                         <i class="fa-solid fa-download"></i>
                         <span class="hidden sm:inline">Instalar App</span>
                     </button>
-
+<script>
+  (function () {
+    const isNative = Boolean(
+      window.Capacitor &&
+      typeof window.Capacitor.isNativePlatform === 'function' &&
+      window.Capacitor.isNativePlatform()
+    );
+    const btn = document.getElementById('btnInstallApp');
+    if (isNative && btn) {
+      btn.classList.add('hidden');
+      btn.style.display = 'none';
+    }
+  })();
+</script>
                     <!-- Botão Sino de Alertas -->
                     <button onclick="openAlertModal()" class="relative p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl transition-all active:scale-95" title="Central de Alertas e Envio">
                         <i class="fa-solid fa-bell text-base"></i>
