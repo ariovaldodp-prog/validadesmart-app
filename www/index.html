@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValidadeSmart - Controle de Validade de Mercearia</title>
+    
+    <!-- Meta Tags PWA / Android / iOS para conversão em APK e Instalação -->
+    <meta name="theme-color" content="#059669">
+    <meta name="description" content="Aplicativo de controle de validade de produtos de mercearia, leitor de código de barras, alertas e exportação PDF.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ValidadeSmart">
+    <link id="pwa-manifest" rel="manifest" href="">
+    <link id="pwa-apple-icon" rel="apple-touch-icon" href="">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Biblioteca HTML5-QRCode para Leitura de Código de Barras -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- Bibliotecas jsPDF e jsPDF-AutoTable para Exportação em PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        #reader video {
+            border-radius: 0.75rem;
+            object-fit: cover;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.85); opacity: 0.8; }
+            70% { transform: scale(1.25); opacity: 0; }
+            100% { transform: scale(1.25); opacity: 0; }
+        }
+        .animate-bell-ring {
+            animation: pulse-ring 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Notificação Toast Flutuante -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Cabeçalho Superior -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo e Título -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm">
+                        <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">ValidadeSmart</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Gestão Inteligente de Validade & Rebaixa</p>
+                    </div>
+                </div>
+
+                <!-- Ações Principais + Sino de Alertas -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Botão de Instalação Direta do App (PWA) -->
+                    <button id="btnInstallApp" onclick="installPWAApp()" class="inline-flex items-center gap-1.5 px-3 py-2 sm:py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs sm:text-sm font-semibold rounded-xl transition-all active:scale-95" title="Instalar aplicativo no celular">
+                        <i class="fa-solid fa-download"></i>
+                        <span class="hidden sm:inline">Instalar App</span>
+                    </button>
+
+                    <!-- Botão Sino de Alertas -->
+                    <button onclick="openAlertModal()" class="relative p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl transition-all active:scale-95" title="Central de Alertas e Envio">
+                        <i class="fa-solid fa-bell text-base"></i>
+                        <span id="bellBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-rose-600 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow">
+                            0
+                        </span>
+                    </button>
+
+                    <!-- Botão Exportar PDF -->
+                    <button onclick="exportToPDF()" class="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-xl transition-all shadow-sm active:scale-95">
+                        <i class="fa-solid fa-file-pdf text-rose-400"></i>
+                        <span class="hidden md:inline">Exportar PDF</span>
+                        <span class="md:hidden">PDF</span>
+                    </button>
+
+                    <!-- Botão Novo Produto -->
+                    <button onclick="openProductModal()" class="inline-flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all shadow-sm active:scale-95">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden sm:inline">Novo Produto</span>
+                        <span class="sm:hidden">Novo</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner Dinâmico de Alerta de Vencimento -->
+    <div id="alertBanner" class="hidden bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 text-xs sm:text-sm font-medium">
+                <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </span>
+                <span id="alertBannerText">Atenção: Existem produtos vencidos ou próximos do vencimento!</span>
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+                <button onclick="openAlertModal()" class="px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1.5">
+                    <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i>
+                    <span>Enviar Alerta</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Cards de Resumo (Dashboard) -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div onclick="setStatusFilter('all')" class="cursor-pointer bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs sm:text-sm font-medium text-slate-500">Total de Itens</span>
+                    <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                        <i class="fa-solid fa-layer-group text-sm"></i>
+                    </span>
+                </div>
+                <p id="statTotal" class="text-2xl sm:text-3xl font-bold text-slate-800 mt-2">0</p>
+                <p class="text-xs text-slate-400 mt-1">Produtos monitorados</p>
+            </div>
+
+            <div onclick="setStatusFilter('expired')" class="cursor-pointer bg-white p-4 rounded-2xl border border-rose-100 shadow-sm hover:border-rose-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs sm:text-sm font-medium text-rose-600">Vencidos</span>
+                    <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                        <i class="fa-solid fa-circle-exclamation text-sm"></i>
+                    </span>
+                </div>
+                <p id="statExpired" class="text-2xl sm:text-3xl font-bold text-rose-600 mt-2">0</p>
+                <p class="text-xs text-rose-400 mt-1">Retirar da área de venda</p>
+            </div>
+
+            <div onclick="setStatusFilter('warning')" class="cursor-pointer bg-white p-4 rounded-2xl border border-amber-100 shadow-sm hover:border-amber-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <span id="statWarningLabel" class="text-xs sm:text-sm font-medium text-amber-600">Próximo (≤ 15 dias)</span>
+                    <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i class="fa-solid fa-clock text-sm"></i>
+                    </span>
+                </div>
+                <p id="statWarning" class="text-2xl sm:text-3xl font-bold text-amber-600 mt-2">0</p>
+                <p class="text-xs text-amber-500 mt-1">Priorizar / Rebaixa</p>
+            </div>
+
+            <div onclick="setStatusFilter('valid')" class="cursor-pointer bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm hover:border-emerald-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs sm:text-sm font-medium text-emerald-600">Dentro do Prazo</span>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                    </span>
+                </div>
+                <p id="statValid" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-2">0</p>
+                <p class="text-xs text-emerald-500 mt-1">Validade regular</p>
+            </div>
+        </section>
+
+        <!-- Barra de Filtros, Busca e Alternância de Visualização -->
+        <section class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row gap-3 justify-between">
+                <!-- Campo de Busca -->
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderProducts()" placeholder="Buscar por nome, código interno, EAN ou observação..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+                </div>
+
+                <!-- Controles de Filtro por Local, Ordenação e Modo de Exibição -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="storageFilterSelect" onchange="renderProducts()" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="all">Todos os Locais</option>
+                        <option value="Gôndola">Gôndola</option>
+                        <option value="Estoque / Depósito">Estoque / Depósito</option>
+                        <option value="Terminal de Rebaixa">Terminal de Rebaixa</option>
+                        <option value="Câmara Fria">Câmara Fria</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+
+                    <select id="sortSelect" onchange="renderProducts()" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="expiry_asc">Validade: Mais próxima</option>
+                        <option value="expiry_desc">Validade: Mais distante</option>
+                        <option value="name_asc">Nome: A - Z</option>
+                        <option value="recent">Cadastro: Mais recentes</option>
+                    </select>
+
+                    <!-- Botões Alternar Lista / Grade -->
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button id="btnViewGrid" onclick="setViewMode('grid')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-white text-slate-800 shadow-sm" title="Visualizar em Cartões">
+                            <i class="fa-solid fa-grip"></i>
+                        </button>
+                        <button id="btnViewTable" onclick="setViewMode('table')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-800" title="Visualizar em Tabela">
+                            <i class="fa-solid fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pílulas de Filtro de Status -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                <span class="text-xs font-medium text-slate-400 mr-1">Status:</span>
+                <button data-filter="all" onclick="setStatusFilter('all')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-white transition-all whitespace-nowrap">
+                    Todos
+                </button>
+                <button data-filter="expired" onclick="setStatusFilter('expired')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 inline-block mr-1"></span> Vencidos
+                </button>
+                <button data-filter="warning" onclick="setStatusFilter('warning')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 inline-block mr-1"></span> Próximo do Vencimento
+                </button>
+                <button data-filter="valid" onclick="setStatusFilter('valid')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span> Dentro do Prazo
+                </button>
+            </div>
+        </section>
+
+        <!-- Área de Exibição dos Produtos -->
+        <section id="productsContainer">
+            <!-- Visualização em Cartões (Grid) -->
+            <div id="gridView" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+
+            <!-- Visualização em Tabela -->
+            <div id="tableView" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">Produto</th>
+                                <th class="py-3.5 px-4">Códigos</th>
+                                <th class="py-3.5 px-4">Validade / Status</th>
+                                <th class="py-3.5 px-4">Qtd.</th>
+                                <th class="py-3.5 px-4">Armazenamento</th>
+                                <th class="py-3.5 px-4">Preenchimento</th>
+                                <th class="py-3.5 px-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Estado Vazio -->
+            <div id="emptyState" class="hidden bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-box-open text-2xl"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800">Nenhum produto encontrado</h3>
+                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Não há produtos que correspondam aos filtros atuais ou você ainda não cadastrou nenhum item.</p>
+                <button onclick="openProductModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all">
+                    <i class="fa-solid fa-plus"></i> Cadastrar Primeiro Produto
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
+            <p>ValidadeSmart &copy; 2026 - Controle Inteligente de Mercearia</p>
+            <div class="flex items-center gap-4">
+                <button onclick="loadSampleData()" class="text-emerald-600 hover:underline font-medium">Carregar Exemplos</button>
+                <button onclick="confirmClearAll()" class="text-rose-500 hover:underline">Limpar Todos os Dados</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: CENTRAL DE ALERTAS E ENVIO        -->
+    <!-- ========================================== -->
+    <div id="alertModal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+            <!-- Cabeçalho -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-amber-50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Central de Alertas de Vencimento</h2>
+                        <p class="text-xs text-slate-600">Configure prazos e envie relatórios para a equipe ou compradores</p>
+                    </div>
+                </div>
+                <button onclick="closeAlertModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-amber-200/50 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Corpo -->
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Configurações de Prazo e Notificação Nativa -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Alertar com antecedência de:
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="alertThresholdInput" min="1" max="180" value="15" onchange="updateAlertThreshold(this.value)" class="w-24 px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <span class="text-sm text-slate-600 font-medium">dias antes de vencer</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col justify-between">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Notificações do Navegador
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="requestAndTestBrowserNotification()" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-bell-concierge text-amber-400"></i>
+                                <span>Ativar / Testar Alerta</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Produtos em Alerta -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Itens Críticos Identificados (<span id="alertItemsCount">0</span>)
+                        </h3>
+                        <span class="text-[11px] text-slate-400">Ordenados por urgência</span>
+                    </div>
+                    <div id="alertItemsList" class="max-h-56 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl divide-y divide-slate-100 bg-white">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+                <!-- Botões de Envio e Compartilhamento -->
+                <div class="space-y-2.5 pt-2 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Enviar Alerta para Equipe / Rebaixa:
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <button type="button" onclick="sendAlertWhatsApp()" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span>Enviar WhatsApp</span>
+                        </button>
+                        <button type="button" onclick="sendAlertEmail()" class="py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-envelope text-sm"></i>
+                            <span>Enviar E-mail</span>
+                        </button>
+                        <button type="button" onclick="copyAlertReport()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                            <i class="fa-regular fa-copy text-sm"></i>
+                            <span>Copiar Texto</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: CADASTRO E EDIÇÃO DE PRODUTO      -->
+    <!-- ========================================== -->
+    <div id="productModal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+            <!-- Cabeçalho do Modal -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Cadastrar Produto</h2>
+                </div>
+                <button onclick="closeProductModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Corpo do Formulário -->
+            <form id="productForm" onsubmit="saveProduct(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+                <input type="hidden" id="productId">
+
+                <!-- Área do Leitor de Código de Barras -->
+                <div id="scannerContainer" class="hidden bg-slate-900 p-4 rounded-xl text-white space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span id="scannerStatusHeader" class="text-xs font-medium flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                            Aponte a câmera para o código de barras
+                        </span>
+                        <button type="button" onclick="stopBarcodeScanner()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2.5 py-1.5 rounded-lg font-medium">
+                            Fechar Leitor
+                        </button>
+                    </div>
+
+                    <!-- Alerta amigável exibido quando a câmera ao vivo é bloqueada ou indisponível -->
+                    <div id="cameraBlockedNotice" class="hidden bg-amber-500/15 border border-amber-400/40 rounded-xl p-3.5 text-xs space-y-2.5">
+                        <div class="flex items-start gap-2.5 text-amber-200">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base mt-0.5 shrink-0"></i>
+                            <div class="space-y-1">
+                                <p class="font-bold text-amber-300">Câmera ao vivo bloqueada ou indisponível</p>
+                                <p id="cameraBlockedReason" class="text-amber-100/90 leading-relaxed">
+                                    O navegador bloqueou o vídeo direto (comum ao abrir arquivo local sem HTTPS ou sem permissão). Use a alternativa abaixo com a câmera nativa do celular:
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                            <label class="cursor-pointer flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-sm transition-all">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>Tirar Foto do Código (Funciona Offline / Sem Permissão)</span>
+                                <input type="file" accept="image/*" capture="environment" onchange="scanBarcodeFromFile(event)" class="hidden">
+                            </label>
+                            <label class="cursor-pointer py-2.5 px-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold text-center flex items-center justify-center gap-2 transition-all">
+                                <i class="fa-solid fa-image"></i>
+                                <span>Galeria</span>
+                                <input type="file" accept="image/*" onchange="scanBarcodeFromFile(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="reader" class="w-full overflow-hidden rounded-lg bg-black min-h-[220px]"></div>
+
+                    <!-- Barra de alternativa rápida sempre visível dentro do leitor -->
+                    <div class="pt-2 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+                        <span class="text-slate-400">Dificuldade para focar no vídeo?</span>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <label class="cursor-pointer flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>Foto do Código</span>
+                                <input type="file" accept="image/*" capture="environment" onchange="scanBarcodeFromFile(event)" class="hidden">
+                            </label>
+                            <label class="cursor-pointer flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <span>Imagem</span>
+                                <input type="file" accept="image/*" onchange="scanBarcodeFromFile(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Elemento oculto auxiliar para decodificação estática via html5-qrcode -->
+                <div id="fileScanReader" class="hidden"></div>
+
+                <!-- Linha 1: Código de Barras (Escanear Vídeo + Foto/Imagem + Buscar na Rede) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Código de Barras (EAN / GTIN)
+                    </label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="barcode" placeholder="Ex: 7891000100103" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="startBarcodeScanner()" class="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" title="Ler código com câmera ao vivo">
+                                <i class="fa-solid fa-barcode"></i>
+                                <span>Escanear Vídeo</span>
+                            </button>
+                            <button type="button" id="btnFetchNetwork" onclick="fetchProductFromNetwork()" class="flex-1 sm:flex-none px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm" title="Buscar nome e foto do produto na internet">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Buscar Foto na Rede</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Atalho direto para leitura por Foto / Imagem da Galeria (Sem precisar de vídeo ao vivo) -->
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <label class="cursor-pointer flex-1 sm:flex-none px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-camera text-emerald-600"></i>
+                            <span>Tirar Foto do Código de Barras</span>
+                            <input type="file" id="barcodePhotoInput" accept="image/*" capture="environment" onchange="scanBarcodeFromFile(event)" class="hidden">
+                        </label>
+                        <label class="cursor-pointer flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-image text-slate-500"></i>
+                            <span>Enviar Imagem do Código</span>
+                            <input type="file" id="barcodeGalleryInput" accept="image/*" onchange="scanBarcodeFromFile(event)" class="hidden">
+                        </label>
+                    </div>
+
+                    <!-- Indicador de Leitura de Imagem do Código -->
+                    <div id="barcodeImageReadingIndicator" class="hidden mt-2 flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                        <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+                        <span>Lendo código de barras na imagem...</span>
+                    </div>
+
+                    <!-- Indicador de Carregamento da Busca na Rede -->
+                    <div id="networkLoadingIndicator" class="hidden mt-2 flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                        <span>Buscando foto e dados do produto na rede...</span>
+                    </div>
+                </div>
+
+                <!-- Linha 2: Código Interno e Nome do Produto -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Código Interno *
+                        </label>
+                        <input type="text" id="internalCode" required placeholder="Ex: PROD-001" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Nome do Produto *
+                        </label>
+                        <input type="text" id="productName" required placeholder="Ex: Leite Integral UHT 1L" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- Linha 3: Foto do Produto (Rede, Câmera ou Upload) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Foto do Produto
+                    </label>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3.5 bg-slate-50 border border-dashed border-slate-300 rounded-xl">
+                        <!-- Pré-visualização -->
+                        <div class="relative w-24 h-24 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                            <img id="photoPreview" alt="Prévia" class="hidden w-full h-full object-contain bg-white" onerror="handlePreviewImageError()">
+                            <i id="photoPlaceholderIcon" class="fa-solid fa-camera text-2xl text-slate-300"></i>
+                            <button type="button" id="btnRemovePhoto" onclick="removePhoto()" class="hidden absolute top-1 right-1 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full text-xs flex items-center justify-center shadow">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Botões de Captura / Arquivo -->
+                        <div class="flex-1 space-y-2 w-full">
+                            <div class="flex flex-wrap gap-2">
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-medium transition-all shadow-sm">
+                                    <i class="fa-solid fa-camera text-emerald-600"></i>
+                                    <span>Tirar Foto</span>
+                                    <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)" class="hidden">
+                                </label>
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-medium transition-all shadow-sm">
+                                    <i class="fa-solid fa-upload text-slate-500"></i>
+                                    <span>Escolher da Galeria</span>
+                                    <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+                                </label>
+                            </div>
+                            <p id="photoSourceHint" class="text-[11px] text-slate-400">
+                                A foto pode ser baixada automaticamente ao escanear o código de barras ou capturada pela câmera.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linha 4: Data de Validade e Quantidade -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Data de Validade *
+                        </label>
+                        <input type="date" id="expiryDate" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Quantidade *
+                        </label>
+                        <input type="number" id="quantity" required min="1" value="1" placeholder="Ex: 12" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- Linha 5: Lugar de Armazenamento e Data de Preenchimento -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Lugar de Armazenamento *
+                        </label>
+                        <select id="storageSelect" onchange="toggleCustomStorage()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                            <option value="Gôndola">Gôndola</option>
+                            <option value="Estoque / Depósito">Estoque / Depósito</option>
+                            <option value="Terminal de Rebaixa">Terminal de Rebaixa</option>
+                            <option value="Câmara Fria">Câmara Fria</option>
+                            <option value="Outros">Outros (Especificar...)</option>
+                        </select>
+                        <input type="text" id="customStorageInput" placeholder="Digite o local de armazenamento" class="hidden mt-2 w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Data de Preenchimento *
+                        </label>
+                        <input type="date" id="entryDate" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- Linha 6: Observação -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Observação
+                    </label>
+                    <textarea id="notes" rows="2" placeholder="Ex: Lote promocional, transferir para Terminal de Rebaixa, embalagem amassada..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"></textarea>
+                </div>
+
+                <!-- Rodapé do Formulário -->
+                <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+                    <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition-all">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Salvar Produto</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: CONFIRMAÇÃO PERSONALIZADA         -->
+    <!-- ========================================== -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+            </div>
+            <div class="text-center">
+                <h3 id="confirmTitle" class="text-lg font-bold text-slate-800">Confirmar Exclusão</h3>
+                <p id="confirmMessage" class="text-sm text-slate-500 mt-1">Tem certeza que deseja excluir este item?</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition-all">
+                    Cancelar
+                </button>
+                <button id="confirmActionBtn" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-xl transition-all">
+                    Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ESTADO DA APLICAÇÃO E ARMAZENAMENTO LOCAL
+        // ==========================================
+        const STORAGE_KEY = 'validadeSmart_products_v2';
+        const SETTINGS_KEY = 'validadeSmart_settings_v2';
+        
+        let products = [];
+        let settings = {
+            alertDays: 15
+        };
+        let currentFilter = 'all';
+        let currentView = 'grid';
+        let currentPhotoData = ''; // Pode ser Base64 ou URL remota (fallback CORS)
+        let html5QrcodeScanner = null;
+        let deferredInstallPrompt = null;
+
+        // Captura o evento nativo de instalação PWA quando disponível no navegador
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const installBtn = document.getElementById('btnInstallApp');
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            showToast('ValidadeSmart instalado com sucesso no dispositivo!', 'success');
+        });
+
+        async function installPWAApp() {
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                const choiceResult = await deferredInstallPrompt.userChoice;
+                if (choiceResult.outcome === 'accepted') {
+                    showToast('Instalação iniciada!', 'success');
+                } else {
+                    showToast('Instalação cancelada.', 'info');
+                }
+                deferredInstallPrompt = null;
+                return;
+            }
+
+            if (window.location.protocol === 'file:') {
+                showToast('Abra o app por um link HTTPS (ex.: GitHub Pages) para instalar como PWA.', 'warning');
+                return;
+            }
+
+            const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            if (isIOS) {
+                showToast('No iPhone/Safari: toque em Compartilhar (seta) > "Adicionar à Tela de Início".', 'info');
+            } else {
+                showToast('No navegador: toque nos 3 pontinhos (⋮) > "Instalar aplicativo" ou "Adicionar à tela inicial".', 'info');
+            }
+        }
+
+        // Inicialização ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            initPWASupport();
+            loadSettings();
+            loadProductsFromStorage();
+            renderProducts();
+            checkAndTriggerAutoNotification();
+        });
+
+        // ==========================================
+        // SUPORTE PWA EMBUTIDO (PRONTO PARA PWABUILDER / APK)
+        // ==========================================
+        function initPWASupport() {
+            try {
+                // Gera ícone vetorial do aplicativo em SVG Data URI (192x192 e 512x512)
+                const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                    <rect width="512" height="512" rx="112" fill="#059669"/>
+                    <rect x="116" y="136" width="280" height="240" rx="28" fill="#ffffff" fill-opacity="0.16"/>
+                    <path d="M160 205h192v24H160zm0 52h136v24H160zm0 52h96v24h-96z" fill="#ffffff"/>
+                    <circle cx="356" cy="316" r="56" fill="#fbbf24"/>
+                    <path d="M332 316l16 16 32-34" stroke="#064e3b" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>`;
+                const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+                const appleIconEl = document.getElementById('pwa-apple-icon');
+                if (appleIconEl) appleIconEl.href = iconUrl;
+
+                // Gera Web App Manifest dinamicamente para reconhecimento no PWABuilder e Chrome
+                const manifestObj = {
+                    name: "ValidadeSmart - Controle de Validade",
+                    short_name: "ValidadeSmart",
+                    description: "Controle de validade de mercearia, leitor de código de barras, alertas e relatórios PDF.",
+                    start_url: window.location.href,
+                    scope: "./",
+                    display: "standalone",
+                    orientation: "portrait-primary",
+                    background_color: "#f8fafc",
+                    theme_color: "#059669",
+                    categories: ["business", "productivity", "utilities"],
+                    icons: [
+                        {
+                            src: iconUrl,
+                            sizes: "192x192",
+                            type: "image/svg+xml",
+                            purpose: "any maskable"
+                        },
+                        {
+                            src: iconUrl,
+                            sizes: "512x512",
+                            type: "image/svg+xml",
+                            purpose: "any maskable"
+                        }
+                    ]
+                };
+
+                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                const manifestUrl = URL.createObjectURL(manifestBlob);
+                const manifestEl = document.getElementById('pwa-manifest');
+                if (manifestEl) manifestEl.href = manifestUrl;
+
+                // Registra Service Worker embutido quando hospedado em HTTPS ou localhost (exigido pelo PWABuilder)
+                if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+                    const swCode = `
+                        const CACHE_NAME = 'validadesmart-pwa-v1';
+                        self.addEventListener('install', (event) => {
+                            self.skipWaiting();
+                        });
+                        self.addEventListener('activate', (event) => {
+                            event.waitUntil(self.clients.claim());
+                        });
+                        self.addEventListener('fetch', (event) => {
+                            if (event.request.method !== 'GET') return;
+                            event.respondWith(
+                                fetch(event.request)
+                                    .then((response) => {
+                                        const clone = response.clone();
+                                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                                        return response;
+                                    })
+                                    .catch(() => caches.match(event.request))
+                            );
+                        });
+                    `;
+                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(swBlob);
+                    navigator.serviceWorker.register(swUrl).catch(() => {});
+                }
+            } catch (e) {
+                console.warn("Aviso ao inicializar recursos PWA:", e);
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed.alertDays === 'number' && parsed.alertDays >= 1) {
+                        settings.alertDays = parsed.alertDays;
+                    }
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar configurações:', e);
+            }
+            const input = document.getElementById('alertThresholdInput');
+            if (input) input.value = settings.alertDays;
+            const warnLabel = document.getElementById('statWarningLabel');
+            if (warnLabel) warnLabel.textContent = `Próximo (≤ ${settings.alertDays} dias)`;
+        }
+
+        function saveSettings() {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Erro ao salvar configurações:', e);
+            }
+        }
+
+        function updateAlertThreshold(val) {
+            const days = Math.max(1, Math.min(180, parseInt(val, 10) || 15));
+            settings.alertDays = days;
+            const input = document.getElementById('alertThresholdInput');
+            if (input) input.value = days;
+            const warnLabel = document.getElementById('statWarningLabel');
+            if (warnLabel) warnLabel.textContent = `Próximo (≤ ${days} dias)`;
+            saveSettings();
+            renderProducts();
+            populateAlertModalList();
+            showToast(`Prazo de alerta atualizado para ${days} dias.`, 'info');
+        }
+
+        function loadProductsFromStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        products = parsed;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao ler produtos do armazenamento:', e);
+            }
+            products = [];
+        }
+
+        function saveProductsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+            } catch (e) {
+                showToast('Aviso: limite de armazenamento local atingido. Tente usar fotos menores.', 'error');
+            }
+        }
+
+        // ==========================================
+        // UTILITÁRIOS DE DATA, STATUS E NOTIFICAÇÃO
+        // ==========================================
+        function getTodayISO() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            return new Date(now.getTime() - offset).toISOString().split('T')[0];
+        }
+
+        function addDaysISO(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        }
+
+        function formatDateBR(isoDate) {
+            if (!isoDate) return '-';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function getDaysUntilExpiry(expiryDateStr) {
+            if (!expiryDateStr) return 9999;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const [y, m, d] = expiryDateStr.split('-').map(Number);
+            const exp = new Date(y, m - 1, d);
+            exp.setHours(0, 0, 0, 0);
+            return Math.round((exp - today) / (1000 * 60 * 60 * 24));
+        }
+
+        function getExpiryStatus(expiryDateStr) {
+            const diffDays = getDaysUntilExpiry(expiryDateStr);
+            if (diffDays < 0) {
+                const absDays = Math.abs(diffDays);
+                return {
+                    type: 'expired',
+                    diffDays,
+                    label: absDays === 1 ? 'Vencido há 1 dia' : `Vencido há ${absDays} dias`,
+                    badgeClass: 'bg-rose-100 text-rose-700 border-rose-200',
+                    dotClass: 'bg-rose-500',
+                    borderClass: 'border-rose-200'
+                };
+            }
+            if (diffDays <= settings.alertDays) {
+                let label = `Vence em ${diffDays} dias`;
+                if (diffDays === 0) label = 'Vence HOJE!';
+                else if (diffDays === 1) label = 'Vence AMANHÃ!';
+                return {
+                    type: 'warning',
+                    diffDays,
+                    label,
+                    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+                    dotClass: 'bg-amber-500',
+                    borderClass: 'border-amber-200'
+                };
+            }
+            return {
+                type: 'valid',
+                diffDays,
+                label: `Vence em ${diffDays} dias`,
+                badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                dotClass: 'bg-emerald-500',
+                borderClass: 'border-slate-200'
+            };
+        }
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const styles = {
+                success: { bg: 'bg-emerald-600', icon: 'fa-circle-check' },
+                error: { bg: 'bg-rose-600', icon: 'fa-circle-exclamation' },
+                warning: { bg: 'bg-amber-600', icon: 'fa-triangle-exclamation' },
+                info: { bg: 'bg-slate-800', icon: 'fa-circle-info' }
+            };
+            const cfg = styles[type] || styles.info;
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl text-white text-xs sm:text-sm font-medium shadow-lg transition-all duration-300 transform translate-y-0 ${cfg.bg}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${cfg.icon} text-base shrink-0"></i>
+                <span class="flex-1 leading-snug">${escapeHTML(message)}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3600);
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO, FILTROS E DASHBOARD
+        // ==========================================
+        function setStatusFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                const isSelected = btn.getAttribute('data-filter') === filter;
+                if (isSelected) {
+                    btn.className = 'filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-white transition-all whitespace-nowrap';
+                } else {
+                    btn.className = 'filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all whitespace-nowrap';
+                }
+            });
+            renderProducts();
+        }
+
+        function setViewMode(mode) {
+            currentView = mode;
+            const btnGrid = document.getElementById('btnViewGrid');
+            const btnTable = document.getElementById('btnViewTable');
+            if (mode === 'grid') {
+                btnGrid.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-white text-slate-800 shadow-sm';
+                btnTable.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-800';
+            } else {
+                btnTable.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-white text-slate-800 shadow-sm';
+                btnGrid.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-800';
+            }
+            renderProducts();
+        }
+
+        function getFilteredAndSortedProducts() {
+            const search = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            const storageFilter = document.getElementById('storageFilterSelect')?.value || 'all';
+            const sortBy = document.getElementById('sortSelect')?.value || 'expiry_asc';
+
+            const standardStorages = ['Gôndola', 'Estoque / Depósito', 'Terminal de Rebaixa', 'Câmara Fria'];
+
+            const filtered = products.filter(p => {
+                const status = getExpiryStatus(p.expiryDate);
+                if (currentFilter !== 'all' && status.type !== currentFilter) return false;
+
+                if (storageFilter !== 'all') {
+                    if (storageFilter === 'Outros') {
+                        if (standardStorages.includes(p.storage)) return false;
+                    } else if (p.storage !== storageFilter) {
+                        return false;
+                    }
+                }
+
+                if (search) {
+                    const haystack = [
+                        p.name,
+                        p.internalCode,
+                        p.barcode,
+                        p.storage,
+                        p.notes
+                    ].filter(Boolean).join(' ').toLowerCase();
+                    if (!haystack.includes(search)) return false;
+                }
+
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'expiry_asc') return (a.expiryDate || '').localeCompare(b.expiryDate || '');
+                if (sortBy === 'expiry_desc') return (b.expiryDate || '').localeCompare(a.expiryDate || '');
+                if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '', 'pt-BR');
+                if (sortBy === 'recent') return (b.createdAt || 0) - (a.createdAt || 0);
+                return 0;
+            });
+
+            return filtered;
+        }
+
+        function updateDashboardAndAlerts() {
+            let expiredCount = 0;
+            let warningCount = 0;
+            let validCount = 0;
+
+            products.forEach(p => {
+                const st = getExpiryStatus(p.expiryDate);
+                if (st.type === 'expired') expiredCount++;
+                else if (st.type === 'warning') warningCount++;
+                else validCount++;
+            });
+
+            document.getElementById('statTotal').textContent = products.length;
+            document.getElementById('statExpired').textContent = expiredCount;
+            document.getElementById('statWarning').textContent = warningCount;
+            document.getElementById('statValid').textContent = validCount;
+
+            const criticalTotal = expiredCount + warningCount;
+            const bellBadge = document.getElementById('bellBadge');
+            const alertBanner = document.getElementById('alertBanner');
+            const alertBannerText = document.getElementById('alertBannerText');
+
+            if (criticalTotal > 0) {
+                bellBadge.textContent = criticalTotal;
+                bellBadge.classList.remove('hidden');
+                alertBanner.classList.remove('hidden');
+
+                const parts = [];
+                if (expiredCount > 0) parts.push(`${expiredCount} vencido(s)`);
+                if (warningCount > 0) parts.push(`${warningCount} próximo(s) do vencimento (≤ ${settings.alertDays} dias)`);
+                alertBannerText.textContent = `Atenção: Você possui ${parts.join(' e ')}.`;
+            } else {
+                bellBadge.classList.add('hidden');
+                alertBanner.classList.add('hidden');
+            }
+        }
+
+        function renderProducts() {
+            updateDashboardAndAlerts();
+            const list = getFilteredAndSortedProducts();
+
+            const gridView = document.getElementById('gridView');
+            const tableView = document.getElementById('tableView');
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (list.length === 0) {
+                gridView.classList.add('hidden');
+                tableView.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            if (currentView === 'grid') {
+                tableView.classList.add('hidden');
+                gridView.classList.remove('hidden');
+                gridView.innerHTML = list.map(p => {
+                    const st = getExpiryStatus(p.expiryDate);
+                    const photoHtml = p.photo
+                        ? `<img src="${escapeHTML(p.photo)}" alt="${escapeHTML(p.name)}" class="w-full h-full object-contain bg-white" onerror="this.onerror=null;this.parentElement.innerHTML='<i class=\\'fa-solid fa-box text-3xl text-slate-300\\'></i>'">`
+                        : `<i class="fa-solid fa-box text-3xl text-slate-300"></i>`;
+
+                    return `
+                        <article class="bg-white rounded-2xl border ${st.borderClass} shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
+                            <div class="relative h-36 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-2">
+                                ${photoHtml}
+                                <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${st.badgeClass} shadow-sm">
+                                    ${escapeHTML(st.label)}
+                                </span>
+                                <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-lg bg-slate-900/80 text-white text-[11px] font-semibold">
+                                    Qtd: ${escapeHTML(p.quantity)}
+                                </span>
+                            </div>
+
+                            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                                <div>
+                                    <div class="flex items-center justify-between gap-2 text-[11px] font-mono text-slate-500">
+                                        <span class="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-semibold">${escapeHTML(p.internalCode)}</span>
+                                        ${p.barcode ? `<span class="truncate"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</span>` : ''}
+                                    </div>
+                                    <h3 class="font-bold text-slate-800 text-sm sm:text-base mt-1.5 line-clamp-2" title="${escapeHTML(p.name)}">
+                                        ${escapeHTML(p.name)}
+                                    </h3>
+                                </div>
+
+                                <div class="space-y-1.5 text-xs text-slate-600 pt-2 border-t border-slate-100">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Validade:</span>
+                                        <span class="font-bold text-slate-800">${formatDateBR(p.expiryDate)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Local:</span>
+                                        <span class="font-medium text-slate-700 truncate max-w-[160px]">${escapeHTML(p.storage)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Preenchimento:</span>
+                                        <span>${formatDateBR(p.entryDate)}</span>
+                                    </div>
+                                    ${p.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg italic line-clamp-2 mt-1">"${escapeHTML(p.notes)}"</p>` : ''}
+                                </div>
+
+                                <div class="pt-2 flex gap-2">
+                                    <button onclick="editProduct('${escapeHTML(p.id)}')" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-pen"></i> Editar
+                                    </button>
+                                    <button onclick="askDeleteProduct('${escapeHTML(p.id)}')" class="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-semibold transition-all" title="Excluir produto">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            } else {
+                gridView.classList.add('hidden');
+                tableView.classList.remove('hidden');
+                tableBody.innerHTML = list.map(p => {
+                    const st = getExpiryStatus(p.expiryDate);
+                    const thumbHtml = p.photo
+                        ? `<img src="${escapeHTML(p.photo)}" alt="" class="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 shrink-0" onerror="this.style.display='none'">`
+                        : `<div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-box"></i></div>`;
+
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-3">
+                                    ${thumbHtml}
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-slate-800 truncate max-w-[220px]">${escapeHTML(p.name)}</p>
+                                        ${p.notes ? `<p class="text-xs text-slate-400 truncate max-w-[220px]">${escapeHTML(p.notes)}</p>` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 font-mono text-xs">
+                                <div class="font-semibold text-slate-700">${escapeHTML(p.internalCode)}</div>
+                                <div class="text-slate-400">${escapeHTML(p.barcode || '-')}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-slate-800 text-xs mb-1">${formatDateBR(p.expiryDate)}</div>
+                                <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${st.badgeClass}">
+                                    ${escapeHTML(st.label)}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-bold text-slate-700">${escapeHTML(p.quantity)}</td>
+                            <td class="py-3 px-4 text-xs text-slate-600">${escapeHTML(p.storage)}</td>
+                            <td class="py-3 px-4 text-xs text-slate-500">${formatDateBR(p.entryDate)}</td>
+                            <td class="py-3 px-4 text-right whitespace-nowrap">
+                                <button onclick="editProduct('${escapeHTML(p.id)}')" class="p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Editar">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="askDeleteProduct('${escapeHTML(p.id)}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ==========================================
+        // CENTRAL DE ALERTAS E NOTIFICAÇÕES
+        // ==========================================
+        function getCriticalProducts() {
+            return products
+                .map(p => ({ ...p, status: getExpiryStatus(p.expiryDate) }))
+                .filter(p => p.status.type === 'expired' || p.status.type === 'warning')
+                .sort((a, b) => a.status.diffDays - b.status.diffDays);
+        }
+
+        function openAlertModal() {
+            populateAlertModalList();
+            document.getElementById('alertModal').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').classList.add('hidden');
+        }
+
+        function populateAlertModalList() {
+            const critical = getCriticalProducts();
+            const countEl = document.getElementById('alertItemsCount');
+            const listEl = document.getElementById('alertItemsList');
+
+            countEl.textContent = critical.length;
+
+            if (critical.length === 0) {
+                listEl.innerHTML = `
+                    <div class="p-6 text-center text-xs text-slate-500">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-xl mb-2 block"></i>
+                        Nenhum produto vencido ou vencendo nos próximos ${settings.alertDays} dias.
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = critical.map(item => `
+                <div class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50">
+                    <div class="min-w-0">
+                        <p class="font-bold text-slate-800 truncate">${escapeHTML(item.name)}</p>
+                        <p class="text-slate-500 mt-0.5">
+                            Cód: <span class="font-mono">${escapeHTML(item.internalCode)}</span> • Local: ${escapeHTML(item.storage)} • Qtd: <strong>${escapeHTML(item.quantity)}</strong>
+                        </p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${item.status.badgeClass}">
+                            ${escapeHTML(item.status.label)}
+                        </span>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${formatDateBR(item.expiryDate)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buildAlertTextReport() {
+            const critical = getCriticalProducts();
+            const todayStr = formatDateBR(getTodayISO());
+            if (critical.length === 0) {
+                return `*ValidadeSmart (${todayStr})*\nNenhum produto vencido ou próximo do vencimento (prazo configurado: ${settings.alertDays} dias).`;
+            }
+
+            const lines = [
+                `*ALERTA DE VALIDADE - MERCEARIA (${todayStr})*`,
+                `Itens vencidos ou vencendo em até ${settings.alertDays} dias:`,
+                ``
+            ];
+
+            critical.forEach((p, idx) => {
+                const tag = p.status.type === 'expired' ? '[VENCIDO]' : '[ATENÇÃO]';
+                lines.push(`${idx + 1}. ${tag} *${p.name}* (Cód: ${p.internalCode})`);
+                lines.push(`   Validade: ${formatDateBR(p.expiryDate)} (${p.status.label}) | Qtd: ${p.quantity} | Local: ${p.storage}`);
+            });
+
+            return lines.join('\n');
+        }
+
+        function sendAlertWhatsApp() {
+            const text = buildAlertTextReport();
+            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        function sendAlertEmail() {
+            const subject = `Alerta de Validade de Produtos - ${formatDateBR(getTodayISO())}`;
+            const body = buildAlertTextReport().replace(/\*/g, '');
+            window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+
+        function copyAlertReport() {
+            const text = buildAlertTextReport().replace(/\*/g, '');
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Relatório de alerta copiado para a área de transferência!', 'success');
+            } catch (e) {
+                showToast('Não foi possível copiar o texto.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function requestAndTestBrowserNotification() {
+            if (!('Notification' in window)) {
+                showToast('Este navegador não suporta notificações nativas.', 'warning');
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    const critical = getCriticalProducts();
+                    const msg = critical.length > 0
+                        ? `Existem ${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento!`
+                        : 'Notificações ativadas! Você será avisado quando houver produtos próximos do vencimento.';
+                    new Notification('ValidadeSmart - Alerta de Validade', { body: msg });
+                    showToast('Notificação enviada com sucesso!', 'success');
+                } else {
+                    showToast('Permissão de notificação negada no navegador.', 'warning');
+                }
+            });
+        }
+
+        function checkAndTriggerAutoNotification() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const critical = getCriticalProducts();
+            if (critical.length > 0) {
+                new Notification('ValidadeSmart - Atenção', {
+                    body: `${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento.`
+                });
+            }
+        }
+
+        // ==========================================
+        // LEITOR DE CÓDIGO DE BARRAS (VÍDEO E FOTO)
+        // ==========================================
+        function startBarcodeScanner() {
+            const container = document.getElementById('scannerContainer');
+            const blockedNotice = document.getElementById('cameraBlockedNotice');
+            const blockedReason = document.getElementById('cameraBlockedReason');
+
+            container.classList.remove('hidden');
+            blockedNotice.classList.add('hidden');
+
+            if (typeof Html5Qrcode === 'undefined') {
+                blockedNotice.classList.remove('hidden');
+                blockedReason.textContent = 'Biblioteca do leitor indisponível offline. Use a foto da câmera nativa abaixo.';
+                return;
+            }
+
+            if (html5QrcodeScanner) {
+                stopBarcodeScanner().then(() => startBarcodeScanner());
+                return;
+            }
+
+            try {
+                html5QrcodeScanner = new Html5Qrcode('reader');
+                html5QrcodeScanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 250, height: 140 } },
+                    (decodedText) => {
+                        document.getElementById('barcode').value = decodedText;
+                        showToast(`Código lido: ${decodedText}`, 'success');
+                        stopBarcodeScanner();
+                        fetchProductFromNetwork();
+                    },
+                    () => {}
+                ).catch(err => {
+                    console.warn('Falha ao abrir câmera ao vivo:', err);
+                    blockedNotice.classList.remove('hidden');
+                    if (window.location.protocol === 'file:') {
+                        blockedReason.textContent = 'O navegador bloqueia vídeo direto em arquivos locais (file://). Use o botão verde abaixo para tirar foto do código com a câmera nativa.';
+                    } else {
+                        blockedReason.textContent = 'Permissão de câmera ao vivo bloqueada ou indisponível. Use o botão verde abaixo para tirar foto do código de barras.';
+                    }
+                    html5QrcodeScanner = null;
+                });
+            } catch (e) {
+                blockedNotice.classList.remove('hidden');
+                html5QrcodeScanner = null;
+            }
+        }
+
+        function stopBarcodeScanner() {
+            const container = document.getElementById('scannerContainer');
+            container.classList.add('hidden');
+            if (html5QrcodeScanner) {
+                const scannerRef = html5QrcodeScanner;
+                html5QrcodeScanner = null;
+                return scannerRef.stop().then(() => scannerRef.clear()).catch(() => {});
+            }
+            return Promise.resolve();
+        }
+
+        async function scanBarcodeFromFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const indicator = document.getElementById('barcodeImageReadingIndicator');
+            indicator.classList.remove('hidden');
+
+            try {
+                if (html5QrcodeScanner) {
+                    await stopBarcodeScanner();
+                }
+
+                const fileScanner = new Html5Qrcode('fileScanReader');
+                let decodedText = null;
+
+                try {
+                    decodedText = await fileScanner.scanFile(file, false);
+                } catch (firstErr) {
+                    // Segunda tentativa: redimensiona e melhora contraste para fotos de alta resolução
+                    const processedFile = await preprocessBarcodeImage(file);
+                    decodedText = await fileScanner.scanFile(processedFile, false);
+                }
+
+                await fileScanner.clear();
+
+                if (decodedText) {
+                    document.getElementById('barcode').value = decodedText;
+                    document.getElementById('scannerContainer').classList.add('hidden');
+                    showToast(`Código de barras detectado: ${decodedText}`, 'success');
+                    fetchProductFromNetwork();
+                }
+            } catch (err) {
+                showToast('Não foi possível identificar o código de barras na foto. Tente aproximar e focar melhor ou digite manualmente.', 'warning');
+            } finally {
+                indicator.classList.add('hidden');
+                event.target.value = '';
+            }
+        }
+
+        function preprocessBarcodeImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const targetWidth = Math.min(1200, img.width);
+                        const scale = targetWidth / img.width;
+                        canvas.width = targetWidth;
+                        canvas.height = Math.round(img.height * scale);
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.filter = 'contrast(145%) grayscale(100%)';
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(new File([blob], 'barcode_processed.jpg', { type: 'image/jpeg' }));
+                            } else {
+                                reject(new Error('Falha ao gerar imagem processada'));
+                            }
+                        }, 'image/jpeg', 0.92);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==========================================
+        // BUSCA DE FOTO E NOME NA REDE (OPEN FOOD FACTS)
+        // ==========================================
+        async function fetchProductFromNetwork() {
+            const barcodeVal = (document.getElementById('barcode').value || '').trim().replace(/\s+/g, '');
+            if (!barcodeVal) {
+                showToast('Digite ou escaneie um código de barras primeiro.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btnFetchNetwork');
+            const indicator = document.getElementById('networkLoadingIndicator');
+            btn.disabled = true;
+            indicator.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcodeVal)}.json`);
+                if (!response.ok) throw new Error('Falha na consulta de rede');
+
+                const data = await response.json();
+                if (data.status === 1 && data.product) {
+                    const prod = data.product;
+                    const foundName = prod.product_name_pt || prod.product_name || prod.generic_name_pt || prod.generic_name || '';
+                    const brand = prod.brands ? prod.brands.split(',')[0].trim() : '';
+                    const fullName = foundName && brand && !foundName.toLowerCase().includes(brand.toLowerCase())
+                        ? `${foundName} - ${brand}`
+                        : foundName;
+
+                    const nameInput = document.getElementById('productName');
+                    if (fullName && !nameInput.value.trim()) {
+                        nameInput.value = fullName;
+                    }
+
+                    const imageUrl = prod.image_front_url || prod.image_url || prod.image_front_small_url || '';
+                    if (imageUrl) {
+                        const base64OrUrl = await convertRemoteImageToBase64(imageUrl);
+                        setPreviewPhoto(base64OrUrl, 'Foto obtida automaticamente da rede (Open Food Facts).');
+                        showToast('Produto e foto encontrados na rede!', 'success');
+                    } else if (fullName) {
+                        showToast('Nome encontrado na rede, mas sem foto cadastrada.', 'info');
+                    } else {
+                        showToast('Produto encontrado sem detalhes completos.', 'info');
+                    }
+                } else {
+                    showToast('Produto não localizado na base online. Preencha manualmente.', 'info');
+                }
+            } catch (err) {
+                showToast('Não foi possível consultar a rede agora. Verifique sua conexão.', 'warning');
+            } finally {
+                btn.disabled = false;
+                indicator.classList.add('hidden');
+            }
+        }
+
+        async function convertRemoteImageToBase64(url) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                return await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result || url);
+                    reader.onerror = () => resolve(url);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                return url;
+            }
+        }
+
+        // ==========================================
+        // MANIPULAÇÃO DE FOTO E PRÉ-VISUALIZAÇÃO
+        // ==========================================
+        function handlePreviewImageError() {
+            const preview = document.getElementById('photoPreview');
+            const placeholder = document.getElementById('photoPlaceholderIcon');
+            const btnRemove = document.getElementById('btnRemovePhoto');
+
+            if (preview && preview.getAttribute('src')) {
+                preview.removeAttribute('src');
+                preview.classList.add('hidden');
+            }
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (btnRemove) btnRemove.classList.add('hidden');
+            currentPhotoData = '';
+        }
+
+        function setPreviewPhoto(photoSrc, sourceText = '') {
+            const preview = document.getElementById('photoPreview');
+            const placeholder = document.getElementById('photoPlaceholderIcon');
+            const btnRemove = document.getElementById('btnRemovePhoto');
+            const hint = document.getElementById('photoSourceHint');
+
+            currentPhotoData = photoSrc || '';
+
+            if (currentPhotoData) {
+                preview.src = currentPhotoData;
+                preview.classList.remove('hidden');
+                if (placeholder) placeholder.classList.add('hidden');
+                if (btnRemove) btnRemove.classList.remove('hidden');
+                if (hint && sourceText) hint.textContent = sourceText;
+            } else {
+                removePhoto();
+            }
+        }
+
+        function removePhoto() {
+            const preview = document.getElementById('photoPreview');
+            const placeholder = document.getElementById('photoPlaceholderIcon');
+            const btnRemove = document.getElementById('btnRemovePhoto');
+            const photoInput = document.getElementById('photoInput');
+            const fileInput = document.getElementById('fileInput');
+            const hint = document.getElementById('photoSourceHint');
+
+            currentPhotoData = '';
+            if (preview) {
+                preview.removeAttribute('src');
+                preview.classList.add('hidden');
+            }
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (btnRemove) btnRemove.classList.add('hidden');
+            if (photoInput) photoInput.value = '';
+            if (fileInput) fileInput.value = '';
+            if (hint) hint.textContent = 'A foto pode ser baixada automaticamente ao escanear o código de barras ou capturada pela câmera.';
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 480;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > MAX_SIZE) {
+                        height = Math.round((height * MAX_SIZE) / width);
+                        width = MAX_SIZE;
+                    } else if (height > MAX_SIZE) {
+                        width = Math.round((width * MAX_SIZE) / height);
+                        height = MAX_SIZE;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    setPreviewPhoto(compressedBase64, 'Foto carregada do dispositivo.');
+                };
+                img.onerror = function () {
+                    showToast('Não foi possível processar a imagem selecionada.', 'error');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // CRUD DE PRODUTOS (MODAL, SALVAR, EDITAR, EXCLUIR)
+        // ==========================================
+        function toggleCustomStorage() {
+            const select = document.getElementById('storageSelect');
+            const customInput = document.getElementById('customStorageInput');
+            if (select.value === 'Outros') {
+                customInput.classList.remove('hidden');
+                customInput.required = true;
+            } else {
+                customInput.classList.add('hidden');
+                customInput.required = false;
+            }
+        }
+
+        function openProductModal(productToEdit = null) {
+            const form = document.getElementById('productForm');
+            form.reset();
+            removePhoto();
+
+            const standardStorages = ['Gôndola', 'Estoque / Depósito', 'Terminal de Rebaixa', 'Câmara Fria'];
+
+            if (productToEdit) {
+                document.getElementById('modalTitle').textContent = 'Editar Produto';
+                document.getElementById('productId').value = productToEdit.id;
+                document.getElementById('barcode').value = productToEdit.barcode || '';
+                document.getElementById('internalCode').value = productToEdit.internalCode || '';
+                document.getElementById('productName').value = productToEdit.name || '';
+                document.getElementById('expiryDate').value = productToEdit.expiryDate || '';
+                document.getElementById('quantity').value = productToEdit.quantity || 1;
+                document.getElementById('entryDate').value = productToEdit.entryDate || getTodayISO();
+                document.getElementById('notes').value = productToEdit.notes || '';
+
+                if (standardStorages.includes(productToEdit.storage)) {
+                    document.getElementById('storageSelect').value = productToEdit.storage;
+                    document.getElementById('customStorageInput').value = '';
+                } else {
+                    document.getElementById('storageSelect').value = 'Outros';
+                    document.getElementById('customStorageInput').value = productToEdit.storage || '';
+                }
+                toggleCustomStorage();
+
+                if (productToEdit.photo) {
+                    setPreviewPhoto(productToEdit.photo, 'Foto salva no cadastro.');
+                }
+            } else {
+                document.getElementById('modalTitle').textContent = 'Cadastrar Produto';
+                document.getElementById('productId').value = '';
+                document.getElementById('entryDate').value = getTodayISO();
+                document.getElementById('storageSelect').value = 'Gôndola';
+                toggleCustomStorage();
+
+                const nextNum = String(products.length + 1).padStart(3, '0');
+                document.getElementById('internalCode').value = `PROD-${nextNum}`;
+            }
+
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            stopBarcodeScanner();
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function saveProduct(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('productId').value;
+            const barcode = document.getElementById('barcode').value.trim();
+            const internalCode = document.getElementById('internalCode').value.trim();
+            const name = document.getElementById('productName').value.trim();
+            const expiryDate = document.getElementById('expiryDate').value;
+            const quantity = Math.max(1, parseInt(document.getElementById('quantity').value, 10) || 1);
+            const entryDate = document.getElementById('entryDate').value;
+            const notes = document.getElementById('notes').value.trim();
+
+            const storageSelect = document.getElementById('storageSelect').value;
+            const storage = storageSelect === 'Outros'
+                ? (document.getElementById('customStorageInput').value.trim() || 'Outros')
+                : storageSelect;
+
+            if (!internalCode || !name || !expiryDate || !entryDate) {
+                showToast('Preencha todos os campos obrigatórios (*).', 'warning');
+                return;
+            }
+
+            if (id) {
+                const index = products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    products[index] = {
+                        ...products[index],
+                        barcode,
+                        internalCode,
+                        name,
+                        photo: currentPhotoData,
+                        expiryDate,
+                        quantity,
+                        storage,
+                        entryDate,
+                        notes,
+                        updatedAt: Date.now()
+                    };
+                    showToast('Produto atualizado com sucesso!', 'success');
+                }
+            } else {
+                const newProduct = {
+                    id: 'prod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    barcode,
+                    internalCode,
+                    name,
+                    photo: currentPhotoData,
+                    expiryDate,
+                    quantity,
+                    storage,
+                    entryDate,
+                    notes,
+                    createdAt: Date.now()
+                };
+                products.unshift(newProduct);
+                showToast('Produto cadastrado com sucesso!', 'success');
+            }
+
+            saveProductsToStorage();
+            closeProductModal();
+            renderProducts();
+        }
+
+        function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                openProductModal(product);
+            }
+        }
+
+        // ==========================================
+        // MODAL DE CONFIRMAÇÃO E DADOS DE EXEMPLO
+        // ==========================================
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.onclick = () => {
+                closeConfirmModal();
+                onConfirm();
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function askDeleteProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            openConfirmModal(
+                'Excluir Produto',
+                `Deseja realmente remover "${product.name}" (${product.internalCode})?`,
+                () => {
+                    products = products.filter(p => p.id !== id);
+                    saveProductsToStorage();
+                    renderProducts();
+                    showToast('Produto excluído.', 'info');
+                }
+            );
+        }
+
+        function confirmClearAll() {
+            if (products.length === 0) {
+                showToast('A lista já está vazia.', 'info');
+                return;
+            }
+            openConfirmModal(
+                'Limpar Todos os Dados',
+                'Esta ação apagará todos os produtos cadastrados neste dispositivo. Continuar?',
+                () => {
+                    products = [];
+                    saveProductsToStorage();
+                    renderProducts();
+                    showToast('Todos os registros foram removidos.', 'info');
+                }
+            );
+        }
+
+        function loadSampleData() {
+            const today = getTodayISO();
+            const samples = [
+                {
+                    id: 'sample_1',
+                    barcode: '7891000100103',
+                    internalCode: 'MER-101',
+                    name: 'Leite Integral UHT 1L',
+                    photo: '',
+                    expiryDate: addDaysISO(-2),
+                    quantity: 8,
+                    storage: 'Gôndola',
+                    entryDate: today,
+                    notes: 'Retirar imediatamente para descarte/troca.',
+                    createdAt: Date.now() - 3000
+                },
+                {
+                    id: 'sample_2',
+                    barcode: '7891910000197',
+                    internalCode: 'MER-102',
+                    name: 'Iogurte Natural Integral 170g',
+                    photo: '',
+                    expiryDate: addDaysISO(5),
+                    quantity: 24,
+                    storage: 'Terminal de Rebaixa',
+                    entryDate: today,
+                    notes: 'Aplicar etiqueta amarela de desconto 30%.',
+                    createdAt: Date.now() - 2000
+                },
+                {
+                    id: 'sample_3',
+                    barcode: '7896004006253',
+                    internalCode: 'MER-103',
+                    name: 'Biscoito Recheado Chocolate 130g',
+                    photo: '',
+                    expiryDate: addDaysISO(12),
+                    quantity: 15,
+                    storage: 'Gôndola',
+                    entryDate: today,
+                    notes: 'Colocar na frente da prateleira (PVPS).',
+                    createdAt: Date.now() - 1000
+                },
+                {
+                    id: 'sample_4',
+                    barcode: '7891000053508',
+                    internalCode: 'MER-104',
+                    name: 'Café Torrado e Moído 500g',
+                    photo: '',
+                    expiryDate: addDaysISO(95),
+                    quantity: 40,
+                    storage: 'Estoque / Depósito',
+                    entryDate: today,
+                    notes: 'Lote novo fechado em caixa.',
+                    createdAt: Date.now()
+                }
+            ];
+
+            products = [...samples, ...products];
+            saveProductsToStorage();
+            renderProducts();
+            showToast('Produtos de exemplo adicionados!', 'success');
+        }
+
+        // ==========================================
+        // EXPORTAÇÃO PARA PDF (jsPDF + AutoTable)
+        // ==========================================
+        function exportToPDF() {
+            const list = getFilteredAndSortedProducts();
+            if (list.length === 0) {
+                showToast('Não há produtos na visualização atual para exportar.', 'warning');
+                return;
+            }
+
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                showToast('Biblioteca de PDF ainda está carregando. Tente novamente em instantes.', 'error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+            const todayStr = formatDateBR(getTodayISO());
+            let expiredCount = 0;
+            let warningCount = 0;
+            let validCount = 0;
+
+            list.forEach(p => {
+                const st = getExpiryStatus(p.expiryDate);
+                if (st.type === 'expired') expiredCount++;
+                else if (st.type === 'warning') warningCount++;
+                else validCount++;
+            });
+
+            // Cabeçalho do PDF
+            doc.setFillColor(5, 150, 105);
+            doc.rect(0, 0, 297, 22, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(15);
+            doc.setFont('helvetica', 'bold');
+            doc.text('ValidadeSmart - Relatório de Controle de Validade', 14, 14);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Emitido em: ${todayStr} | Total: ${list.length} itens`, 283, 14, { align: 'right' });
+
+            // Resumo
+            doc.setTextColor(51, 65, 85);
+            doc.setFontSize(9.5);
+            doc.text(
+                `Resumo:  Vencidos: ${expiredCount}   |   Próximos (<= ${settings.alertDays} dias): ${warningCount}   |   Dentro do prazo: ${validCount}`,
+                14,
+                30
+            );
+
+            const tableRows = list.map(p => {
+                const st = getExpiryStatus(p.expiryDate);
+                return [
+                    p.internalCode || '-',
+                    p.barcode || '-',
+                    p.name || '-',
+                    formatDateBR(p.expiryDate),
+                    st.label,
+                    String(p.quantity || 1),
+                    p.storage || '-',
+                    formatDateBR(p.entryDate),
+                    p.notes || '-'
+                ];
+            });
+
+            doc.autoTable({
+                startY: 35,
+                head: [[
+                    'Cód. Interno',
+                    'Cód. Barras',
+                    'Produto',
+                    'Validade',
+                    'Status',
+                    'Qtd.',
+                    'Armazenamento',
+                    'Preenchimento',
+                    'Observação'
+                ]],
+                body: tableRows,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2.5,
+                    valign: 'middle'
+                },
+                headStyles: {
+                    fillColor: [30, 41, 59],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                columnStyles: {
+                    0: { cellWidth: 24 },
+                    1: { cellWidth: 28 },
+                    2: { cellWidth: 52 },
+                    3: { cellWidth: 22 },
+                    4: { cellWidth: 32 },
+                    5: { cellWidth: 14, halign: 'center' },
+                    6: { cellWidth: 32 },
+                    7: { cellWidth: 22 },
+                    8: { cellWidth: 'auto' }
+                },
+                didParseCell: function (data) {
+                    if (data.section === 'body' && data.column.index === 4) {
+                        const rowProduct = list[data.row.index];
+                        if (rowProduct) {
+                            const st = getExpiryStatus(rowProduct.expiryDate);
+                            if (st.type === 'expired') {
+                                data.cell.styles.textColor = [190, 18, 60];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (st.type === 'warning') {
+                                data.cell.styles.textColor = [180, 83, 9];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else {
+                                data.cell.styles.textColor = [4, 120, 87];
+                            }
+                        }
+                    }
+                }
+            });
+
+            doc.save(`controle-validade-${getTodayISO()}.pdf`);
+            showToast('Relatório PDF gerado com sucesso!', 'success');
+        }
+    </script>
+</body>
+</html>
