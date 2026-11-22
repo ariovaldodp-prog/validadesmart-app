@@ -2002,9 +2002,38 @@
                 }
             });
 
-            doc.save(`controle-validade-${getTodayISO()}.pdf`);
+            await guardarPdfRelatorio(doc, `controle-validade-${getTodayISO()}.pdf`);
             showToast('Relatório PDF gerado com sucesso!', 'success');
         }
+async function guardarPdfRelatorio(doc, nomeArquivo) {
+  const cap = window.Capacitor;
+  const isNative = Boolean(
+    cap &&
+    typeof cap.isNativePlatform === 'function' &&
+    cap.isNativePlatform()
+  );
+
+  if (!isNative) {
+    doc.save(nomeArquivo);
+    return;
+  }
+
+  const Filesystem = cap.Plugins && cap.Plugins.Filesystem;
+  if (!Filesystem) {
+    doc.save(nomeArquivo);
+    return;
+  }
+
+  const dataUri = doc.output('datauristring');
+  const base64Data = dataUri.split(',')[1];
+
+  await Filesystem.writeFile({
+    path: nomeArquivo,
+    data: base64Data,
+    directory: 'DOCUMENTS',
+    recursive: true
+  });
+}
     </script>
 </body>
 </html>
