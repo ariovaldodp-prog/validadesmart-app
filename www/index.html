@@ -671,14 +671,23 @@
         let deferredInstallPrompt = null;
 
         // Captura o evento nativo de instalação PWA quando disponível no navegador
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredInstallPrompt = e;
-            const installBtn = document.getElementById('btnInstallApp');
-            if (installBtn) {
-                installBtn.classList.remove('hidden');
-            }
-        });
+window.addEventListener('beforeinstallprompt', (e) => {
+  const isNativeApp = Boolean(
+    window.Capacitor &&
+    typeof window.Capacitor.isNativePlatform === 'function' &&
+    window.Capacitor.isNativePlatform()
+  );
+  if (isNativeApp) {
+    return;
+  }
+
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const installBtn = document.getElementById('btnInstallApp');
+  if (installBtn) {
+    installBtn.classList.remove('hidden');
+  }
+});
 
         window.addEventListener('appinstalled', () => {
             deferredInstallPrompt = null;
