@@ -34,8 +34,10 @@ jobs:
       - name: Build Debug APK
         working-directory: android
         run: |
+          sed -i '/org\.gradle\.java\.home/d' gradle.properties || true
+          sed -i '/org\.gradle\.java\.home/d' ~/.gradle/gradle.properties || true
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
