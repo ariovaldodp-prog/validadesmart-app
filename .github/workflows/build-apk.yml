@@ -25,11 +25,19 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies and sync Capacitor
-        run: |
-          if [ -f package.json ]; then
-            npm ci || npm install
-            npx cap sync android || true
+    run: |
+      if [ -f package.json ]; then
+        npm ci || npm install
+      fi
+      npx cap sync android
+{
+  "appId": "com.validadesmart.app",
+  "appName": "ValidadeSmart",
+  "webDir": "www"
+}
+EOF
           fi
+          npx cap sync android
 
       - name: Build Debug APK
         working-directory: android
