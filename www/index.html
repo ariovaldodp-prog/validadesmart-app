@@ -1885,7 +1885,7 @@
         // ==========================================
         // EXPORTAÇÃO PARA PDF (jsPDF + AutoTable)
         // ==========================================
-        function exportToPDF() {
+        async function exportToPDF() {
             const list = getFilteredAndSortedProducts();
             if (list.length === 0) {
                 showToast('Não há produtos na visualização atual para exportar.', 'warning');
@@ -2003,37 +2003,51 @@
             });
 
             await guardarPdfRelatorio(doc, `controle-validade-${getTodayISO()}.pdf`);
-            showToast('Relatório PDF gerado com sucesso!', 'success');
         }
-async function guardarPdfRelatorio(doc, nomeArquivo) {
-  const cap = window.Capacitor;
-  const isNative = Boolean(
-    cap &&
-    typeof cap.isNativePlatform === 'function' &&
-    cap.isNativePlatform()
-  );
 
-  if (!isNative) {
-    doc.save(nomeArquivo);
-    return;
-  }
+        async function guardarPdfRelatorio(doc, nomeArquivo) {
+            const cap = window.Capacitor;
+            const isNative = Boolean(
+                cap &&
+                typeof cap.isNativePlatform === 'function' &&
+                cap.isNativePlatform()
+            );
 
-  const Filesystem = cap.Plugins && cap.Plugins.Filesystem;
-  if (!Filesystem) {
-    doc.save(nomeArquivo);
-    return;
-  }
+            if (!isNative) {
+                doc.save(nomeArquivo);
+                showToast('Relatório PDF gerado com sucesso!', 'success');
+                return;
+            }
 
-  const dataUri = doc.output('datauristring');
-  const base64Data = dataUri.split(',')[1];
+            const Filesystem = cap.Plugins && cap.Plugins.Filesystem;
+            if (!Filesystem || typeof Filesystem.writeFile !== 'function') {
+                doc.save(nomeArquivo);
+                showToast('Relatório PDF gerado com sucesso!', 'success');
+                return;
+            }
 
-  await Filesystem.writeFile({
-    path: nomeArquivo,
-    data: base64Data,
-    directory: 'DOCUMENTS',
-    recursive: true
-  });
-}
+            try {
+                const dataUri = doc.output('datauristring');
+                const base64Part = (dataUri.split(',')[1] || '').replace(/\s+/g, '');
+
+                await Filesystem.writeFile({
+                    path: nomeArquivo,
+                    data: base64Part,
+                    directory: 'DOCUMENTS',
+                    recursive: true
+                });
+
+                showToast(`PDF salvo em Documentos (${nomeArquivo})!`, 'success');
+            } catch (err) {
+                console.error('Erro ao salvar PDF via Capacitor Filesystem:', err);
+                showToast('Não foi possível salvar na pasta Documentos. Tentando download padrão...', 'warning');
+                try {
+                    doc.save(nomeArquivo);
+                } catch (fallbackErr) {
+                    console.error('Erro no fallback doc.save:', fallbackErr);
+                }
+            }
+        }
     </script>
 </body>
 </html>
