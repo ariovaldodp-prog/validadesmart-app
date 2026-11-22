@@ -1,1 +1,46 @@
-name: Build Android APK...
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies and sync Capacitor
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+          fi
+          npx cap sync android
+
+      - name: Build Debug APK
+        working-directory: android
+        run: |
+          sed -i '/org\.gradle\.java\.home/d' gradle.properties || true
+          sed -i '/org\.gradle\.java\.home/d' ~/.gradle/gradle.properties || true
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: validadesmart-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
