@@ -2218,6 +2218,95 @@ function restaurarBackupJSON(event) {
 
   leitor.readAsText(arquivo, 'utf-8');
 }
+function gerarChaveProdutoUnico(item) {
+  if (!item || typeof item !== 'object') return '';
+
+  const codigo = String(
+    item.codigo ?? item.barcode ?? item.ean ?? item.sku ?? ''
+  ).trim().toLowerCase();
+
+  const nome = String(
+    item.nome ?? item.produto ?? item.descricao ?? ''
+  ).trim().toLowerCase();
+
+  const validade = String(
+    item.validade ?? item.dataValidade ?? item.vencimento ?? ''
+  ).trim().toLowerCase();
+
+  if (codigo || nome || validade) {
+    return `${codigo}|${nome}|${validade}`;
+  }
+
+  if (item.id !== undefined && item.id !== null) {
+    return `id:${String(item.id).trim().toLowerCase()}`;
+  }
+
+  return JSON.stringify(item);
+}
+
+function deduplificarListaProdutos(lista) {
+  const vistos = new Set();
+  const unicos = [];
+  let removidos = 0;
+
+  for (const item of lista) {
+    const chave = gerarChaveProdutoUnico(item);
+    if (!chave) {
+      unicos.push(item);
+      continue;
+    }
+
+    if (vistos.has(chave)) {
+      removidos++;
+    } else {
+      vistos.add(chave);
+      unicos.push(item);
+    }
+  }
+
+  return { unicos, removidos };
+}
+
+function limparDuplicadosProdutos(silencioso = false) {
+  try {
+    const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
+    const produtos = bruto ? JSON.parse(bruto) : [];
+
+    if (!Array.isArray(produtos) || produtos.length === 0) {
+      if (!silencioso) {
+        notificarBackup('Não há produtos para verificar duplicados.', 'info');
+      }
+      return 0;
+    }
+
+    const { unicos, removidos } = deduplificarListaProdutos(produtos);
+
+    if (removidos === 0) {
+      if (!silencioso) {
+        notificarBackup('Nenhum produto duplicado encontrado.', 'info');
+      }
+      return 0;
+    }
+
+    localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(unicos));
+
+    if (typeof renderProducts === 'function') {
+      renderProducts();
+    }
+
+    if (!silencioso) {
+      notificarBackup(`${removidos} duplicado(s) removido(s). Total: ${unicos.length} itens.`, 'success');
+    }
+
+    return removidos;
+  } catch (erro) {
+    console.error('Erro ao limpar duplicados:', erro);
+    if (!silencioso) {
+      notificarBackup('Erro ao limpar produtos duplicados.', 'error');
+    }
+    return 0;
+  }
+}
     </script>
 <footer class="mt-8 mb-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 select-none">
   <p class="font-medium text-slate-500">ValidadeSmart <span id="appVersionBadge">v1.0.8</span></p>
