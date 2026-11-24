@@ -157,7 +157,7 @@
   <input
     type="file"
     id="inputRestaurarBackup"
-    accept=".json,application/json"
+    accept="*/*"
     class="hidden"
     onchange="restaurarBackupJSON(event)"
   />
@@ -2104,8 +2104,43 @@ function notificarBackup(mensagem, tipo = 'info') {
     alert(mensagem);
   }
 }
+async function salvarBackupEmDocumentos(nomeArquivo, jsonString) {
+  const cap = window.Capacitor;
+  const Filesystem = cap && cap.Plugins && cap.Plugins.Filesystem;
+  const isNative = cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform();
 
-function exportarBackupJSON() {
+  if (isNative && Filesystem) {
+    const bytes = new TextEncoder().encode(jsonString);
+    let binario = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binario += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = btoa(binario);
+
+    await Filesystem.writeFile({
+      path: nomeArquivo,
+      data: base64Data,
+      directory: 'DOCUMENTS',
+      recursive: true
+    });
+
+    return { salvoEmDocumentos: true };
+  }
+
+  const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  return { salvoEmDocumentos: false };
+}
+
+async function exportarBackupJSON() {
   try {
     const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
     const produtos = bruto ? JSON.parse(bruto) : [];
@@ -2123,21 +2158,17 @@ function exportarBackupJSON() {
       produtos
     };
 
-    const jsonString = JSON.stringify(payload, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const dataHoje = new Date().toISOString().slice(0, 10);
-    const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
+   const jsonString = JSON.stringify(payload, null, 2);
+      const dataHoje = new Date().toISOString().slice(0, 10);
+      const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = nomeArquivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
 
-    notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
+      if (resultado.salvoEmDocumentos) {
+        notificarBackup(`Backup salvo em Documentos (${nomeArquivo})!`, 'success');
+      } else {
+        notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
+      }
   } catch (erro) {
     console.error('Erro ao exportar backup JSON:', erro);
     notificarBackup('Erro ao gerar o arquivo de backup.', 'error');
