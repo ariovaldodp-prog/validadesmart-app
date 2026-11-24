@@ -137,6 +137,31 @@
             </div>
         </div>
     </header>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap gap-2 mt-3">
+  <button
+    type="button"
+    onclick="exportarBackupJSON()"
+    class="px-3 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-800"
+  >
+    Exportar Backup (.json)
+  </button>
+
+  <button
+    type="button"
+    onclick="document.getElementById('inputRestaurarBackup').click()"
+    class="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700"
+  >
+    Restaurar Backup
+  </button>
+
+  <input
+    type="file"
+    id="inputRestaurarBackup"
+    accept=".json,application/json"
+    class="hidden"
+    onchange="restaurarBackupJSON(event)"
+  />
+</div>
 
     <!-- Banner Dinâmico de Alerta de Vencimento -->
     <div id="alertBanner" class="hidden bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-sm">
@@ -2070,9 +2095,101 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 }
             }
         }
+const CHAVE_PRODUTOS_BACKUP = 'validadeSmart_products_v2';
+
+function notificarBackup(mensagem, tipo = 'info') {
+  if (typeof showToast === 'function') {
+    showToast(mensagem, tipo);
+  } else {
+    alert(mensagem);
+  }
+}
+
+function exportarBackupJSON() {
+  try {
+    const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
+    const produtos = bruto ? JSON.parse(bruto) : [];
+
+    if (!Array.isArray(produtos) || produtos.length === 0) {
+      notificarBackup('Não há produtos cadastrados para exportar no backup.', 'warning');
+      return;
+    }
+
+    const payload = {
+      app: 'ValidadeSmart',
+      versaoApp: '1.0.8',
+      exportadoEm: new Date().toISOString(),
+      totalItens: produtos.length,
+      produtos
+    };
+
+    const jsonString = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const dataHoje = new Date().toISOString().slice(0, 10);
+    const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
+  } catch (erro) {
+    console.error('Erro ao exportar backup JSON:', erro);
+    notificarBackup('Erro ao gerar o arquivo de backup.', 'error');
+  }
+}
+
+function restaurarBackupJSON(event) {
+  const arquivo = event.target.files && event.target.files[0];
+  if (!arquivo) return;
+
+  const leitor = new FileReader();
+
+  leitor.onload = function (e) {
+    try {
+      const conteudo = JSON.parse(e.target.result);
+      const listaProdutos = Array.isArray(conteudo)
+        ? conteudo
+        : Array.isArray(conteudo?.produtos)
+          ? conteudo.produtos
+          : null;
+
+      if (!listaProdutos) {
+        notificarBackup('Arquivo de backup inválido ou incompatível.', 'error');
+        return;
+      }
+
+      const confirmar = confirm(
+        `Restaurar ${listaProdutos.length} produto(s) do backup? Isso substituirá a lista atual salva neste aparelho.`
+      );
+      if (!confirmar) return;
+
+      localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(listaProdutos));
+      notificarBackup('Backup restaurado com sucesso! Recarregando lista...', 'success');
+
+      if (typeof renderProducts === 'function') {
+        renderProducts();
+      } else {
+        location.reload();
+      }
+    } catch (erro) {
+      console.error('Erro ao restaurar backup JSON:', erro);
+      notificarBackup('Não foi possível ler o arquivo JSON selecionado.', 'error');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  leitor.readAsText(arquivo, 'utf-8');
+}
     </script>
 <footer class="mt-8 mb-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 select-none">
-  <p class="font-medium text-slate-500">ValidadeSmart <span id="appVersionBadge">v1.0.5</span></p>
+  <p class="font-medium text-slate-500">ValidadeSmart <span id="appVersionBadge">v1.0.8</span></p>
   <p class="mt-0.5">&copy; 2026 Desenvolvido por Ariovaldo</p>
 </footer>
 </body>
