@@ -1227,10 +1227,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-3 px-4 font-mono text-xs">
-                                <div class="font-semibold text-slate-700">${escapeHTML(p.internalCode)}</div>
-                                <div class="text-slate-400">${escapeHTML(p.barcode || '-')}</div>
-                            </td>
+                            <td class="py-3 px-4 font-mono">
+  <div class="text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</div>
+  <div class="text-sm font-bold tracking-wide text-slate-900 mt-0.5">${escapeHTML(p.barcode || '-')}</div>
+</td>
                             <td class="py-3 px-4">
                                 <div class="font-bold text-slate-800 text-xs mb-1">${formatDateBR(p.expiryDate)}</div>
                                 <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${st.badgeClass}">
