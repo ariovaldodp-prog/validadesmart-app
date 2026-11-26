@@ -994,6 +994,14 @@
             return new Date(now.getTime() - offset).toISOString().split('T')[0];
         }
 
+        function getTimeStampSuffix() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            return `${hh}${mm}${ss}`;
+        }
+
         function addDaysISO(days) {
             const d = new Date();
             d.setDate(d.getDate() + days);
@@ -2177,7 +2185,8 @@
                 }
             });
 
-            await guardarPdfRelatorio(doc, `controle-validade-${getTodayISO()}.pdf`);
+            const nomeArquivo = `controle-validade-${getTodayISO()}-${getTimeStampSuffix()}.pdf`;
+            await guardarPdfRelatorio(doc, nomeArquivo);
         }
 
         async function guardarPdfRelatorio(doc, nomeArquivo) {
@@ -2287,8 +2296,8 @@ async function exportarBackupJSON() {
     };
 
     const jsonString = JSON.stringify(payload, null, 2);
-    const dataHoje = new Date().toISOString().slice(0, 10);
-    const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
+    const dataHoje = getTodayISO();
+    const nomeArquivo = `validadesmart-backup-${dataHoje}-${getTimeStampSuffix()}.json`;
 
     const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
 
