@@ -32,8 +32,8 @@ jobs:
           npx cap sync android
       - name: Decode Keystore
         run: |
-      mkdir -p android/app
-      echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/validadesmart-release.jks
+     mkdir -p android/app
+     echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/validadesmart-release.jks
       - name: Build Debug APK
     env:
       KEYSTORE_FILE: validadesmart-release.jks
