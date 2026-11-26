@@ -32,14 +32,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+        if (window.tailwind) {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', 'sans-serif'],
+                        }
                     }
                 }
-            }
+            };
         }
     </script>
     <style>
@@ -518,9 +520,9 @@
                                 <i class="fa-solid fa-barcode"></i>
                                 <span>Escanear Vídeo</span>
                             </button>
-                            <button type="button" id="btnFetchNetwork" onclick="fetchProductFromNetwork()" class="flex-1 sm:flex-none px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm" title="Buscar nome e foto do produto na internet">
+                            <button type="button" id="btnFetchNetwork" onclick="fetchProductFromNetwork()" class="flex-1 sm:flex-none px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm" title="Buscar nome e foto no catálogo local ou na internet">
                                 <i class="fa-solid fa-cloud-arrow-down"></i>
-                                <span>Buscar Foto na Rede</span>
+                                <span>Buscar Foto / Catálogo</span>
                             </button>
                         </div>
                     </div>
@@ -548,7 +550,7 @@
                     <!-- Indicador de Carregamento da Busca na Rede -->
                     <div id="networkLoadingIndicator" class="hidden mt-2 flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl">
                         <i class="fa-solid fa-circle-notch fa-spin"></i>
-                        <span>Buscando foto e dados do produto na rede...</span>
+                        <span>Consultando catálogo local e rede...</span>
                     </div>
                 </div>
 
@@ -599,7 +601,7 @@
                                 </label>
                             </div>
                             <p id="photoSourceHint" class="text-[11px] text-slate-400">
-                                A foto pode ser baixada automaticamente ao escanear o código de barras ou capturada pela câmera.
+                                Funciona offline com fotos da câmera/galeria e catálogo local; busca online tem limite curto de 2,5s.
                             </p>
                         </div>
                     </div>
@@ -697,6 +699,7 @@
         // ==========================================
         const STORAGE_KEY = 'validadeSmart_products_v2';
         const SETTINGS_KEY = 'validadeSmart_settings_v2';
+        const CATALOG_KEY = 'validadeSmart_barcode_catalog_v1';
         
         let products = [];
         let settings = {
@@ -704,28 +707,28 @@
         };
         let currentFilter = 'all';
         let currentView = 'grid';
-        let currentPhotoData = ''; // Pode ser Base64 ou URL remota (fallback CORS)
+        let currentPhotoData = '';
         let html5QrcodeScanner = null;
         let deferredInstallPrompt = null;
 
         // Captura o evento nativo de instalação PWA quando disponível no navegador
-window.addEventListener('beforeinstallprompt', (e) => {
-  const isNativeApp = Boolean(
-    window.Capacitor &&
-    typeof window.Capacitor.isNativePlatform === 'function' &&
-    window.Capacitor.isNativePlatform()
-  );
-  if (isNativeApp) {
-    return;
-  }
+        window.addEventListener('beforeinstallprompt', (e) => {
+          const isNativeApp = Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform()
+          );
+          if (isNativeApp) {
+            return;
+          }
 
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  const installBtn = document.getElementById('btnInstallApp');
-  if (installBtn) {
-    installBtn.classList.remove('hidden');
-  }
-});
+          e.preventDefault();
+          deferredInstallPrompt = e;
+          const installBtn = document.getElementById('btnInstallApp');
+          if (installBtn) {
+            installBtn.classList.remove('hidden');
+          }
+        });
 
         window.addEventListener('appinstalled', () => {
             deferredInstallPrompt = null;
@@ -768,11 +771,60 @@ window.addEventListener('beforeinstallprompt', (e) => {
         });
 
         // ==========================================
-        // SUPORTE PWA EMBUTIDO (PRONTO PARA PWABUILDER / APK)
+        // CATÁLOGO LOCAL OFFLINE POR CÓDIGO DE BARRAS
+        // ==========================================
+        function getLocalCatalog() {
+            try {
+                const raw = localStorage.getItem(CATALOG_KEY);
+                const parsed = raw ? JSON.parse(raw) : {};
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveToLocalCatalog(barcode, name, photo) {
+            const cleanCode = String(barcode || '').trim().replace(/\s+/g, '');
+            if (!cleanCode || !name) return;
+
+            try {
+                const catalog = getLocalCatalog();
+                const existing = catalog[cleanCode] || {};
+                catalog[cleanCode] = {
+                    name: String(name).trim(),
+                    photo: (photo && photo.startsWith('data:image/')) ? photo : (existing.photo || ''),
+                    updatedAt: Date.now()
+                };
+                localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
+            } catch (e) {
+                console.warn('Aviso ao atualizar catálogo local:', e);
+            }
+        }
+
+        function lookupLocalCatalog(barcode) {
+            const cleanCode = String(barcode || '').trim().replace(/\s+/g, '');
+            if (!cleanCode) return null;
+
+            const catalog = getLocalCatalog();
+            if (catalog[cleanCode]) {
+                return catalog[cleanCode];
+            }
+
+            const matchedProduct = products.find(p => String(p.barcode || '').trim().replace(/\s+/g, '') === cleanCode && p.name);
+            if (matchedProduct) {
+                return {
+                    name: matchedProduct.name,
+                    photo: matchedProduct.photo || ''
+                };
+            }
+            return null;
+        }
+
+        // ==========================================
+        // SUPORTE PWA EMBUTIDO + CACHE OFFLINE-FIRST
         // ==========================================
         function initPWASupport() {
             try {
-                // Gera ícone vetorial do aplicativo em SVG Data URI (192x192 e 512x512)
                 const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                     <rect width="512" height="512" rx="112" fill="#059669"/>
                     <rect x="116" y="136" width="280" height="240" rx="28" fill="#ffffff" fill-opacity="0.16"/>
@@ -785,7 +837,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 const appleIconEl = document.getElementById('pwa-apple-icon');
                 if (appleIconEl) appleIconEl.href = iconUrl;
 
-                // Gera Web App Manifest dinamicamente para reconhecimento no PWABuilder e Chrome
                 const manifestObj = {
                     name: "ValidadeSmart - Controle de Validade",
                     short_name: "ValidadeSmart",
@@ -818,26 +869,47 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 const manifestEl = document.getElementById('pwa-manifest');
                 if (manifestEl) manifestEl.href = manifestUrl;
 
-                // Registra Service Worker embutido quando hospedado em HTTPS ou localhost (exigido pelo PWABuilder)
                 if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
                     const swCode = `
-                        const CACHE_NAME = 'validadesmart-pwa-v1';
+                        const CACHE_NAME = 'validadesmart-offline-v2';
                         self.addEventListener('install', (event) => {
-                            self.skipWaiting();
+                            event.waitUntil(
+                                caches.open(CACHE_NAME).then((cache) => {
+                                    return cache.addAll([self.registration.scope]).catch(() => {});
+                                }).then(() => self.skipWaiting())
+                            );
                         });
                         self.addEventListener('activate', (event) => {
-                            event.waitUntil(self.clients.claim());
+                            event.waitUntil(
+                                caches.keys().then((keys) => Promise.all(
+                                    keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+                                )).then(() => self.clients.claim())
+                            );
                         });
                         self.addEventListener('fetch', (event) => {
                             if (event.request.method !== 'GET') return;
+                            const url = new URL(event.request.url);
+                            const isExternalApi = url.hostname.includes('openfoodfacts.org');
+
+                            if (isExternalApi) {
+                                event.respondWith(
+                                    fetch(event.request).catch(() => caches.match(event.request))
+                                );
+                                return;
+                            }
+
                             event.respondWith(
-                                fetch(event.request)
-                                    .then((response) => {
-                                        const clone = response.clone();
-                                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                                caches.match(event.request).then((cached) => {
+                                    const networkFetch = fetch(event.request).then((response) => {
+                                        if (response && (response.ok || response.type === 'opaque')) {
+                                            const clone = response.clone();
+                                            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                                        }
                                         return response;
-                                    })
-                                    .catch(() => caches.match(event.request))
+                                    }).catch(() => cached);
+
+                                    return cached || networkFetch;
+                                })
                             );
                         });
                     `;
@@ -1401,7 +1473,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
             if (typeof Html5Qrcode === 'undefined') {
                 blockedNotice.classList.remove('hidden');
-                blockedReason.textContent = 'Biblioteca do leitor indisponível offline. Use a foto da câmera nativa abaixo.';
+                blockedReason.textContent = 'Biblioteca do leitor indisponível no momento. Use a foto da câmera nativa abaixo.';
                 return;
             }
 
@@ -1453,6 +1525,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
 
+            if (typeof Html5Qrcode === 'undefined') {
+                showToast('Leitor de imagem indisponível sem cache prévio. Digite o código manualmente.', 'warning');
+                event.target.value = '';
+                return;
+            }
+
             const indicator = document.getElementById('barcodeImageReadingIndicator');
             indicator.classList.remove('hidden');
 
@@ -1467,7 +1545,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 try {
                     decodedText = await fileScanner.scanFile(file, false);
                 } catch (firstErr) {
-                    // Segunda tentativa: redimensiona e melhora contraste para fotos de alta resolução
                     const processedFile = await preprocessBarcodeImage(file);
                     decodedText = await fileScanner.scanFile(processedFile, false);
                 }
@@ -1521,8 +1598,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
         }
 
         // ==========================================
-        // BUSCA DE FOTO E NOME NA REDE (OPEN FOOD FACTS)
+        // BUSCA OFFLINE-FIRST (CATÁLOGO LOCAL + TIMEOUT)
         // ==========================================
+        function fetchWithTimeout(url, timeoutMs = 2500) {
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+            return fetch(url, controller ? { signal: controller.signal } : {})
+                .finally(() => {
+                    if (timer) clearTimeout(timer);
+                });
+        }
+
         async function fetchProductFromNetwork() {
             const barcodeVal = (document.getElementById('barcode').value || '').trim().replace(/\s+/g, '');
             if (!barcodeVal) {
@@ -1532,11 +1619,40 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
             const btn = document.getElementById('btnFetchNetwork');
             const indicator = document.getElementById('networkLoadingIndicator');
+            const nameInput = document.getElementById('productName');
+
+            // 1. Consulta instantânea no catálogo local (funciona 100% offline)
+            const localMatch = lookupLocalCatalog(barcodeVal);
+            let filledFromLocal = false;
+            if (localMatch) {
+                if (localMatch.name && !nameInput.value.trim()) {
+                    nameInput.value = localMatch.name;
+                    filledFromLocal = true;
+                }
+                if (localMatch.photo && !currentPhotoData) {
+                    setPreviewPhoto(localMatch.photo, 'Foto recuperada do catálogo local (offline).');
+                    filledFromLocal = true;
+                }
+            }
+
+            // Se estiver offline, encerra rápido sem esperar rede
+            if (navigator.onLine === false) {
+                if (filledFromLocal) {
+                    showToast('Dados preenchidos pelo catálogo local (modo offline).', 'success');
+                } else {
+                    showToast('Sem conexão com a internet. Preencha nome e foto manualmente.', 'info');
+                }
+                return;
+            }
+
             btn.disabled = true;
             indicator.classList.remove('hidden');
 
             try {
-                const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcodeVal)}.json`);
+                const response = await fetchWithTimeout(
+                    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcodeVal)}.json`,
+                    2500
+                );
                 if (!response.ok) throw new Error('Falha na consulta de rede');
 
                 const data = await response.json();
@@ -1548,26 +1664,34 @@ window.addEventListener('beforeinstallprompt', (e) => {
                         ? `${foundName} - ${brand}`
                         : foundName;
 
-                    const nameInput = document.getElementById('productName');
                     if (fullName && !nameInput.value.trim()) {
                         nameInput.value = fullName;
                     }
 
                     const imageUrl = prod.image_front_url || prod.image_url || prod.image_front_small_url || '';
+                    let photoToCache = currentPhotoData;
                     if (imageUrl) {
                         const base64OrUrl = await convertRemoteImageToBase64(imageUrl);
                         setPreviewPhoto(base64OrUrl, 'Foto obtida automaticamente da rede (Open Food Facts).');
-                        showToast('Produto e foto encontrados na rede!', 'success');
-                    } else if (fullName) {
-                        showToast('Nome encontrado na rede, mas sem foto cadastrada.', 'info');
-                    } else {
-                        showToast('Produto encontrado sem detalhes completos.', 'info');
+                        photoToCache = base64OrUrl;
                     }
+
+                    if (nameInput.value.trim() || photoToCache) {
+                        saveToLocalCatalog(barcodeVal, nameInput.value.trim(), photoToCache);
+                    }
+
+                    showToast('Produto e foto encontrados na rede!', 'success');
+                } else if (filledFromLocal) {
+                    showToast('Item não consta na base online; mantidos dados do catálogo local.', 'info');
                 } else {
                     showToast('Produto não localizado na base online. Preencha manualmente.', 'info');
                 }
             } catch (err) {
-                showToast('Não foi possível consultar a rede agora. Verifique sua conexão.', 'warning');
+                if (filledFromLocal) {
+                    showToast('Rede lenta ou indisponível: dados carregados do catálogo local.', 'info');
+                } else {
+                    showToast('Sem resposta rápida da rede. Preencha os dados manualmente sem travar.', 'warning');
+                }
             } finally {
                 btn.disabled = false;
                 indicator.classList.add('hidden');
@@ -1576,7 +1700,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
         async function convertRemoteImageToBase64(url) {
             try {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, 2500);
+                if (!res.ok) return url;
                 const blob = await res.blob();
                 return await new Promise((resolve) => {
                     const reader = new FileReader();
@@ -1642,7 +1767,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
             if (btnRemove) btnRemove.classList.add('hidden');
             if (photoInput) photoInput.value = '';
             if (fileInput) fileInput.value = '';
-            if (hint) hint.textContent = 'A foto pode ser baixada automaticamente ao escanear o código de barras ou capturada pela câmera.';
+            if (hint) hint.textContent = 'Funciona offline com fotos da câmera/galeria e catálogo local; busca online tem limite curto de 2,5s.';
         }
 
         function handleImageUpload(event) {
@@ -1804,6 +1929,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 showToast('Produto cadastrado com sucesso!', 'success');
             }
 
+            if (barcode) {
+                saveToLocalCatalog(barcode, name, currentPhotoData);
+            }
+
             saveProductsToStorage();
             closeProductModal();
             renderProducts();
@@ -1923,6 +2052,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 }
             ];
 
+            samples.forEach(s => saveToLocalCatalog(s.barcode, s.name, s.photo));
             products = [...samples, ...products];
             saveProductsToStorage();
             renderProducts();
@@ -1940,7 +2070,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
             }
 
             if (!window.jspdf || !window.jspdf.jsPDF) {
-                showToast('Biblioteca de PDF ainda está carregando. Tente novamente em instantes.', 'error');
+                showToast('Biblioteca de PDF indisponível sem cache prévio. Use o Backup JSON ou tente com rede.', 'error');
                 return;
             }
 
@@ -1959,7 +2089,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
                 else validCount++;
             });
 
-            // Cabeçalho do PDF
             doc.setFillColor(5, 150, 105);
             doc.rect(0, 0, 297, 22, 'F');
             doc.setTextColor(255, 255, 255);
@@ -1971,7 +2100,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
             doc.setFont('helvetica', 'normal');
             doc.text(`Emitido em: ${todayStr} | Total: ${list.length} itens`, 283, 14, { align: 'right' });
 
-            // Resumo
             doc.setTextColor(51, 65, 85);
             doc.setFontSize(9.5);
             doc.text(
@@ -2152,23 +2280,23 @@ async function exportarBackupJSON() {
 
     const payload = {
       app: 'ValidadeSmart',
-      versaoApp: '1.0.8',
+      versaoApp: '1.0.9',
       exportadoEm: new Date().toISOString(),
       totalItens: produtos.length,
       produtos
     };
 
-   const jsonString = JSON.stringify(payload, null, 2);
-      const dataHoje = new Date().toISOString().slice(0, 10);
-      const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
+    const jsonString = JSON.stringify(payload, null, 2);
+    const dataHoje = new Date().toISOString().slice(0, 10);
+    const nomeArquivo = `validadesmart-backup-${dataHoje}.json`;
 
-      const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
+    const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
 
-      if (resultado.salvoEmDocumentos) {
-        notificarBackup(`Backup salvo em Documentos (${nomeArquivo})!`, 'success');
-      } else {
-        notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
-      }
+    if (resultado.salvoEmDocumentos) {
+      notificarBackup(`Backup salvo em Documentos (${nomeArquivo})!`, 'success');
+    } else {
+      notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
+    }
   } catch (erro) {
     console.error('Erro ao exportar backup JSON:', erro);
     notificarBackup('Erro ao gerar o arquivo de backup.', 'error');
@@ -2201,6 +2329,7 @@ function restaurarBackupJSON(event) {
       if (!confirmar) return;
 
       localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(listaProdutos));
+      loadProductsFromStorage();
       notificarBackup('Backup restaurado com sucesso! Recarregando lista...', 'success');
 
       if (typeof renderProducts === 'function') {
@@ -2289,6 +2418,7 @@ function limparDuplicadosProdutos(silencioso = false) {
     }
 
     localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(unicos));
+    loadProductsFromStorage();
 
     if (typeof renderProducts === 'function') {
       renderProducts();
