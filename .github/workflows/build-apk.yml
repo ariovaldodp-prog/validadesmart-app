@@ -33,7 +33,7 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          mkdir -p android
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/validadesmart-release.jks
 
       - name: Build Debug APK
@@ -48,7 +48,7 @@ jobs:
           sed -i '/org\.gradle\.java\.home/d' ~/.gradle/gradle.properties || true
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon \
-            -Pandroid.injected.signing.store.file="$KEYSTORE_FILE" \
+            -Pandroid.injected.signing.store.file="$(pwd)/app/$KEYSTORE_FILE" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
