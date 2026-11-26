@@ -32,15 +32,15 @@ jobs:
           npx cap sync android
       - name: Decode Keystore
         run: |
-     mkdir -p android/app
+          mkdir -p android/app
      echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/validadesmart-release.jks
       - name: Build Debug APK
-    env:
-      KEYSTORE_FILE: validadesmart-release.jks
-      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-    working-directory: android
+        env:
+         KEYSTORE_FILE: validadesmart-release.jks
+         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        working-directory: android
         run: |
           sed -i '/org\.gradle\.java\.home/d' gradle.properties || true
           sed -i '/org\.gradle\.java\.home/d' ~/.gradle/gradle.properties || true
