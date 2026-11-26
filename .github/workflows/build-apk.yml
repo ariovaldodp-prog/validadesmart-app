@@ -38,7 +38,7 @@ jobs:
 
       - name: Build Debug APK
         env:
-          KEYSTORE_FILE: validadesmart-release.jks
+          KEYSTORE_FILE: app/validadesmart-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
