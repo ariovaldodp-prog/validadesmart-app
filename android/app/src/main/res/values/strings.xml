@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ValidadeSmart</string>
-    <string name="title_activity_main">ValidadeSmart</string>
-    <string name="package_name">br.com.validadesmart.app</string>
-    <string name="custom_url_scheme">br.com.validadesmart.app</string>
+    <string name="app_name">ValidadeSmart Pro</string>
+    <string name="title_activity_main">ValidadeSmart Pro</string>
+    <string name="package_name">com.validadesmart.pro</string>
+    <string name="custom_url_scheme">com.validadesmart.pro</string>
 </resources>
