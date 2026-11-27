@@ -6,7 +6,7 @@
     <title>ValidadeSmart Pro - Controle de Validade de Mercearia</title>
     
     <!-- Meta Tags PWA / Android / iOS para conversão em APK e Instalação -->
-    <meta name="theme-color" content="#059669">
+    <meta name="theme-color" content="#d97706">
     <meta name="description" content="Aplicativo ValidadeSmart Pro de controle de validade, lote, preço, leitor de código de barras, alertas e exportação PDF.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -84,7 +84,7 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo e Título -->
                 <div class="flex items-center gap-3">
-                    <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm">
+                    <div class="bg-amber-600 text-white p-2.5 rounded-xl shadow-sm">
                         <i class="fa-solid fa-boxes-stacked text-lg"></i>
                     </div>
                     <div>
@@ -158,6 +158,13 @@
   >
     Restaurar Backup
   </button>
+<button
+  type="button"
+  onclick="limparDuplicadosProdutos()"
+  class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+>
+  Limpar Duplicados
+</button>
 
   <input
     type="file"
@@ -710,6 +717,30 @@
                     Excluir
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 4: VISUALIZAÇÃO GRÁFICA DE CÓDIGO DE BARRAS -->
+    <!-- ========================================== -->
+    <div id="barcodeVisualModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4 text-center">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="barcodeModalTitle" class="text-sm font-bold text-slate-800 truncate">Código de Barras</h3>
+                <button type="button" onclick="closeBarcodeVisualModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center">
+                <canvas id="barcodeGraphicCanvas" width="320" height="120" class="max-w-full h-auto"></canvas>
+                <p id="barcodeModalCodeText" class="mt-2 font-mono text-base font-bold tracking-widest text-slate-900"></p>
+            </div>
+            <button type="button" onclick="closeBarcodeVisualModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-xl">
+                Fechar
+            </button>
         </div>
     </div>
 <script>
@@ -1279,7 +1310,7 @@
                                 <div>
                                     <div class="flex items-center justify-between gap-2 font-mono">
                                         <span class="bg-slate-100 px-2 py-0.5 rounded text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</span>
-                                        ${p.barcode ? `<span class="truncate text-sm font-bold tracking-wide text-slate-900"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</span>` : ''}
+                                        ${p.barcode ? `<button type="button" onclick="openBarcodeVisualModal('${escapeHTML(p.barcode)}', '${escapeHTML(p.name)}')" class="truncate text-sm font-bold tracking-wide text-slate-900 underline decoration-dotted hover:text-amber-700" title="Ver código de barras gráfico"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</button>` : ''}
                                     </div>
                                     <h3 class="font-bold text-slate-800 text-sm sm:text-base mt-1.5 line-clamp-2" title="${escapeHTML(p.name)}">
                                         ${escapeHTML(p.name)}
@@ -2523,7 +2554,50 @@
                 return 0;
             }
         }
-    </script>
+ function openBarcodeVisualModal(code, productName) {
+  const cleanCode = String(code || '').trim();
+  if (!cleanCode) return;
+  document.getElementById('barcodeModalTitle').textContent = productName || 'Código de Barras';
+  document.getElementById('barcodeModalCodeText').textContent = cleanCode;
+  document.getElementById('barcodeVisualModal').classList.remove('hidden');
+  drawBarcodeGraphic(document.getElementById('barcodeGraphicCanvas'), cleanCode);
+}
+
+function closeBarcodeVisualModal() {
+  document.getElementById('barcodeVisualModal').classList.add('hidden');
+}
+
+function drawBarcodeGraphic(canvas, code) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const clean = String(code).replace(/[^0-9A-Za-z-]/g, '') || '0000000000000';
+  const pattern = [2, 1, 1, 2];
+  for (let i = 0; i < clean.length; i++) {
+    const charCode = clean.charCodeAt(i);
+    pattern.push((charCode % 3) + 1);
+    pattern.push(((charCode >> 1) % 2) + 1);
+  }
+  pattern.push(2, 1, 2);
+
+  const totalUnits = pattern.reduce((sum, w) => sum + w, 0) + 16;
+  const unitWidth = Math.max(1.5, canvas.width / totalUnits);
+  let x = (canvas.width - totalUnits * unitWidth) / 2;
+  const topY = 12;
+  const barHeight = canvas.height - 24;
+
+  ctx.fillStyle = '#0f172a';
+  pattern.forEach((weight, idx) => {
+    const widthPx = weight * unitWidth;
+    if (idx % 2 === 0) {
+      ctx.fillRect(x, topY, widthPx, barHeight);
+    }
+    x += widthPx;
+  });
+}   
+</script>
 <footer class="mt-8 mb-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 select-none">
   <p class="font-medium text-slate-500">ValidadeSmart Pro <span id="appVersionBadge">v1.0.0-pro</span></p>
   <p class="mt-0.5">&copy; 2026 Desenvolvido por Ariovaldo</p>
