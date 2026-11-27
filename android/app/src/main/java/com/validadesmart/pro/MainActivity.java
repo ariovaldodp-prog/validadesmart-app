@@ -1,4 +1,4 @@
-package com.validadesmart.app;
+package com.validadesmart.pro;
 
 import com.getcapacitor.BridgeActivity;
 
