@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ValidadeSmart - Controle de Validade de Mercearia</title>
+    <title>ValidadeSmart Pro - Controle de Validade de Mercearia</title>
     
     <!-- Meta Tags PWA / Android / iOS para conversão em APK e Instalação -->
     <meta name="theme-color" content="#059669">
-    <meta name="description" content="Aplicativo de controle de validade de produtos de mercearia, leitor de código de barras, alertas e exportação PDF.">
+    <meta name="description" content="Aplicativo ValidadeSmart Pro de controle de validade, lote, preço, leitor de código de barras, alertas e exportação PDF.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ValidadeSmart">
+    <meta name="apple-mobile-web-app-title" content="ValidadeSmart Pro">
     <link id="pwa-manifest" rel="manifest" href="">
     <link id="pwa-apple-icon" rel="apple-touch-icon" href="">
     
@@ -88,8 +88,11 @@
                         <i class="fa-solid fa-boxes-stacked text-lg"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">ValidadeSmart</h1>
-                        <p class="text-xs text-slate-500 hidden sm:block">Gestão Inteligente de Validade & Rebaixa</p>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">ValidadeSmart Pro</h1>
+                            <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800 border border-amber-200">PRO</span>
+                        </div>
+                        <p class="text-xs text-slate-500 hidden sm:block">Gestão Inteligente de Validade, Lote & Rebaixa</p>
                     </div>
                 </div>
 
@@ -239,7 +242,7 @@
                 <!-- Campo de Busca -->
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="renderProducts()" placeholder="Buscar por nome, código interno, EAN ou observação..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+                    <input type="text" id="searchInput" oninput="renderProducts()" placeholder="Buscar por nome, código interno, EAN, lote ou observação..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
                 </div>
 
                 <!-- Controles de Filtro por Local, Ordenação e Modo de Exibição -->
@@ -302,9 +305,9 @@
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 <th class="py-3.5 px-4">Produto</th>
-                                <th class="py-3.5 px-4">Códigos</th>
+                                <th class="py-3.5 px-4">Códigos / Lote</th>
                                 <th class="py-3.5 px-4">Validade / Status</th>
-                                <th class="py-3.5 px-4">Qtd.</th>
+                                <th class="py-3.5 px-4">Qtd. / Preço</th>
                                 <th class="py-3.5 px-4">Armazenamento</th>
                                 <th class="py-3.5 px-4">Preenchimento</th>
                                 <th class="py-3.5 px-4 text-right">Ações</th>
@@ -321,7 +324,7 @@
                     <i class="fa-solid fa-box-open text-2xl"></i>
                 </div>
                 <h3 class="text-base font-semibold text-slate-800">Nenhum produto encontrado</h3>
-                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Não há produtos que correspondam aos filtros atuais ou você ainda não cadastrou nenhum item.</p>
+                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Não há produtos que correspondam aos filtros atuais ou você ainda não cadastrou nenhum item no ValidadeSmart Pro.</p>
                 <button onclick="openProductModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all">
                     <i class="fa-solid fa-plus"></i> Cadastrar Primeiro Produto
                 </button>
@@ -333,7 +336,7 @@
     <!-- Rodapé -->
     <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
-            <p>ValidadeSmart &copy; 2026 - Controle Inteligente de Mercearia</p>
+            <p>ValidadeSmart Pro &copy; 2026 - Controle Inteligente de Mercearia</p>
             <div class="flex items-center gap-4">
                 <button onclick="loadSampleData()" class="text-emerald-600 hover:underline font-medium">Carregar Exemplos</button>
                 <button onclick="confirmClearAll()" class="text-rose-500 hover:underline">Limpar Todos os Dados</button>
@@ -437,7 +440,7 @@
                     <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </div>
-                    <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Cadastrar Produto</h2>
+                    <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Cadastrar Produto (Pro)</h2>
                 </div>
                 <button onclick="closeProductModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -571,6 +574,23 @@
                     </div>
                 </div>
 
+                <!-- Linha 2B: Lote e Preço (Recursos Pro) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Lote
+                        </label>
+                        <input type="text" id="batchCode" placeholder="Ex: L2026-09A" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Preço (R$)
+                        </label>
+                        <input type="number" step="0.01" min="0" id="unitPrice" placeholder="Ex: 6.49" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                </div>
+
                 <!-- Linha 3: Foto do Produto (Rede, Câmera ou Upload) -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -692,15 +712,15 @@
             </div>
         </div>
     </div>
+<script>
+        // ==========================================
+        // ESTADO DA APLICAÇÃO E ARMAZENAMENTO LOCAL (PRO)
+        // ==========================================
+        const STORAGE_KEY = 'validadeSmartPro_products_v1';
+        const SETTINGS_KEY = 'validadeSmartPro_settings_v1';
+        const CATALOG_KEY = 'validadeSmartPro_barcode_catalog_v1';
+        const CHAVE_PRODUTOS_BACKUP = STORAGE_KEY;
 
-    <script>
-        // ==========================================
-        // ESTADO DA APLICAÇÃO E ARMAZENAMENTO LOCAL
-        // ==========================================
-        const STORAGE_KEY = 'validadeSmart_products_v2';
-        const SETTINGS_KEY = 'validadeSmart_settings_v2';
-        const CATALOG_KEY = 'validadeSmart_barcode_catalog_v1';
-        
         let products = [];
         let settings = {
             alertDays: 15
@@ -711,28 +731,27 @@
         let html5QrcodeScanner = null;
         let deferredInstallPrompt = null;
 
-        // Captura o evento nativo de instalação PWA quando disponível no navegador
         window.addEventListener('beforeinstallprompt', (e) => {
-          const isNativeApp = Boolean(
-            window.Capacitor &&
-            typeof window.Capacitor.isNativePlatform === 'function' &&
-            window.Capacitor.isNativePlatform()
-          );
-          if (isNativeApp) {
-            return;
-          }
+            const isNativeApp = Boolean(
+                window.Capacitor &&
+                typeof window.Capacitor.isNativePlatform === 'function' &&
+                window.Capacitor.isNativePlatform()
+            );
+            if (isNativeApp) {
+                return;
+            }
 
-          e.preventDefault();
-          deferredInstallPrompt = e;
-          const installBtn = document.getElementById('btnInstallApp');
-          if (installBtn) {
-            installBtn.classList.remove('hidden');
-          }
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const installBtn = document.getElementById('btnInstallApp');
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+            }
         });
 
         window.addEventListener('appinstalled', () => {
             deferredInstallPrompt = null;
-            showToast('ValidadeSmart instalado com sucesso no dispositivo!', 'success');
+            showToast('ValidadeSmart Pro instalado com sucesso no dispositivo!', 'success');
         });
 
         async function installPWAApp() {
@@ -761,7 +780,6 @@
             }
         }
 
-        // Inicialização ao carregar a página
         document.addEventListener('DOMContentLoaded', () => {
             initPWASupport();
             loadSettings();
@@ -838,9 +856,9 @@
                 if (appleIconEl) appleIconEl.href = iconUrl;
 
                 const manifestObj = {
-                    name: "ValidadeSmart - Controle de Validade",
-                    short_name: "ValidadeSmart",
-                    description: "Controle de validade de mercearia, leitor de código de barras, alertas e relatórios PDF.",
+                    name: "ValidadeSmart Pro - Controle de Validade",
+                    short_name: "ValidadeSmart Pro",
+                    description: "Controle de validade, lote e preço de mercearia, leitor de código de barras, alertas e relatórios PDF.",
                     start_url: window.location.href,
                     scope: "./",
                     display: "standalone",
@@ -871,7 +889,7 @@
 
                 if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
                     const swCode = `
-                        const CACHE_NAME = 'validadesmart-offline-v2';
+                        const CACHE_NAME = 'validadesmart-pro-offline-v1';
                         self.addEventListener('install', (event) => {
                             event.waitUntil(
                                 caches.open(CACHE_NAME).then((cache) => {
@@ -986,7 +1004,7 @@
         }
 
         // ==========================================
-        // UTILITÁRIOS DE DATA, STATUS E NOTIFICAÇÃO
+        // UTILITÁRIOS DE DATA, STATUS E PREÇO
         // ==========================================
         function getTodayISO() {
             const now = new Date();
@@ -1014,6 +1032,13 @@
             const parts = isoDate.split('-');
             if (parts.length !== 3) return isoDate;
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function formatPriceBRL(val) {
+            if (val === undefined || val === null || val === '') return '-';
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+            if (Number.isNaN(num)) return String(val);
+            return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
         function getDaysUntilExpiry(expiryDateStr) {
@@ -1152,6 +1177,7 @@
                         p.name,
                         p.internalCode,
                         p.barcode,
+                        p.batchCode,
                         p.storage,
                         p.notes
                     ].filter(Boolean).join(' ').toLowerCase();
@@ -1235,6 +1261,7 @@
                     const photoHtml = p.photo
                         ? `<img src="${escapeHTML(p.photo)}" alt="${escapeHTML(p.name)}" class="w-full h-full object-contain bg-white" onerror="this.onerror=null;this.parentElement.innerHTML='<i class=\\'fa-solid fa-box text-3xl text-slate-300\\'></i>'">`
                         : `<i class="fa-solid fa-box text-3xl text-slate-300"></i>`;
+                    const precoFormatado = formatPriceBRL(p.unitPrice);
 
                     return `
                         <article class="bg-white rounded-2xl border ${st.borderClass} shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
@@ -1251,9 +1278,9 @@
                             <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
                                 <div>
                                     <div class="flex items-center justify-between gap-2 font-mono">
-                                            <span class="bg-slate-100 px-2 py-0.5 rounded text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</span>
-                                            ${p.barcode ? `<span class="truncate text-sm font-bold tracking-wide text-slate-900"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</span>` : ''}
-                                        </div>
+                                        <span class="bg-slate-100 px-2 py-0.5 rounded text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</span>
+                                        ${p.barcode ? `<span class="truncate text-sm font-bold tracking-wide text-slate-900"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</span>` : ''}
+                                    </div>
                                     <h3 class="font-bold text-slate-800 text-sm sm:text-base mt-1.5 line-clamp-2" title="${escapeHTML(p.name)}">
                                         ${escapeHTML(p.name)}
                                     </h3>
@@ -1264,6 +1291,16 @@
                                         <span class="text-slate-400">Validade:</span>
                                         <span class="font-bold text-slate-800">${formatDateBR(p.expiryDate)}</span>
                                     </div>
+                                    ${p.batchCode ? `
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Lote:</span>
+                                        <span class="font-mono font-semibold text-slate-800">${escapeHTML(p.batchCode)}</span>
+                                    </div>` : ''}
+                                    ${precoFormatado !== '-' ? `
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Preço:</span>
+                                        <span class="font-bold text-emerald-700">${escapeHTML(precoFormatado)}</span>
+                                    </div>` : ''}
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Local:</span>
                                         <span class="font-medium text-slate-700 truncate max-w-[160px]">${escapeHTML(p.storage)}</span>
@@ -1295,6 +1332,7 @@
                     const thumbHtml = p.photo
                         ? `<img src="${escapeHTML(p.photo)}" alt="" class="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 shrink-0" onerror="this.style.display='none'">`
                         : `<div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-box"></i></div>`;
+                    const precoFormatado = formatPriceBRL(p.unitPrice);
 
                     return `
                         <tr class="hover:bg-slate-50/80 transition-colors">
@@ -1308,16 +1346,20 @@
                                 </div>
                             </td>
                             <td class="py-3 px-4 font-mono">
-  <div class="text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</div>
-  <div class="text-sm font-bold tracking-wide text-slate-900 mt-0.5">${escapeHTML(p.barcode || '-')}</div>
-</td>
+                                <div class="text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</div>
+                                <div class="text-xs font-bold tracking-wide text-slate-700 mt-0.5">${escapeHTML(p.barcode || '-')}</div>
+                                ${p.batchCode ? `<div class="text-[11px] text-amber-800 font-semibold mt-0.5">Lote: ${escapeHTML(p.batchCode)}</div>` : ''}
+                            </td>
                             <td class="py-3 px-4">
                                 <div class="font-bold text-slate-800 text-xs mb-1">${formatDateBR(p.expiryDate)}</div>
                                 <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${st.badgeClass}">
                                     ${escapeHTML(st.label)}
                                 </span>
                             </td>
-                            <td class="py-3 px-4 font-bold text-slate-700">${escapeHTML(p.quantity)}</td>
+                            <td class="py-3 px-4 text-xs">
+                                <div class="font-bold text-slate-700">Qtd: ${escapeHTML(p.quantity)}</div>
+                                ${precoFormatado !== '-' ? `<div class="font-bold text-emerald-700 mt-0.5">${escapeHTML(precoFormatado)}</div>` : ''}
+                            </td>
                             <td class="py-3 px-4 text-xs text-slate-600">${escapeHTML(p.storage)}</td>
                             <td class="py-3 px-4 text-xs text-slate-500">${formatDateBR(p.entryDate)}</td>
                             <td class="py-3 px-4 text-right whitespace-nowrap">
@@ -1370,41 +1412,53 @@
                 return;
             }
 
-            listEl.innerHTML = critical.map(item => `
-                <div class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50">
-                    <div class="min-w-0">
-                        <p class="font-bold text-slate-800 truncate">${escapeHTML(item.name)}</p>
-                        <p class="text-slate-500 mt-0.5">
-                            Cód: <span class="font-mono">${escapeHTML(item.internalCode)}</span> • Local: ${escapeHTML(item.storage)} • Qtd: <strong>${escapeHTML(item.quantity)}</strong>
-                        </p>
+            listEl.innerHTML = critical.map(item => {
+                const precoStr = formatPriceBRL(item.unitPrice);
+                const extraParts = [`Qtd: <strong>${escapeHTML(item.quantity)}</strong>`];
+                if (item.batchCode) extraParts.push(`Lote: <span class="font-mono">${escapeHTML(item.batchCode)}</span>`);
+                if (precoStr !== '-') extraParts.push(`Preço: <strong>${escapeHTML(precoStr)}</strong>`);
+
+                return `
+                    <div class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50">
+                        <div class="min-w-0">
+                            <p class="font-bold text-slate-800 truncate">${escapeHTML(item.name)}</p>
+                            <p class="text-slate-500 mt-0.5">
+                                Cód: <span class="font-mono">${escapeHTML(item.internalCode)}</span> • Local: ${escapeHTML(item.storage)} • ${extraParts.join(' • ')}
+                            </p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${item.status.badgeClass}">
+                                ${escapeHTML(item.status.label)}
+                            </span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${formatDateBR(item.expiryDate)}</p>
+                        </div>
                     </div>
-                    <div class="text-right shrink-0">
-                        <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${item.status.badgeClass}">
-                            ${escapeHTML(item.status.label)}
-                        </span>
-                        <p class="text-[11px] text-slate-500 mt-0.5">${formatDateBR(item.expiryDate)}</p>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function buildAlertTextReport() {
             const critical = getCriticalProducts();
             const todayStr = formatDateBR(getTodayISO());
             if (critical.length === 0) {
-                return `*ValidadeSmart (${todayStr})*\nNenhum produto vencido ou próximo do vencimento (prazo configurado: ${settings.alertDays} dias).`;
+                return `*ValidadeSmart Pro (${todayStr})*\nNenhum produto vencido ou próximo do vencimento (prazo configurado: ${settings.alertDays} dias).`;
             }
 
             const lines = [
-                `*ALERTA DE VALIDADE - MERCEARIA (${todayStr})*`,
+                `*ALERTA DE VALIDADE PRO - MERCEARIA (${todayStr})*`,
                 `Itens vencidos ou vencendo em até ${settings.alertDays} dias:`,
                 ``
             ];
 
             critical.forEach((p, idx) => {
                 const tag = p.status.type === 'expired' ? '[VENCIDO]' : '[ATENÇÃO]';
+                const extras = [`Qtd: ${p.quantity}`, `Local: ${p.storage}`];
+                if (p.batchCode) extras.push(`Lote: ${p.batchCode}`);
+                const precoStr = formatPriceBRL(p.unitPrice);
+                if (precoStr !== '-') extras.push(`Preço: ${precoStr}`);
+
                 lines.push(`${idx + 1}. ${tag} *${p.name}* (Cód: ${p.internalCode})`);
-                lines.push(`   Validade: ${formatDateBR(p.expiryDate)} (${p.status.label}) | Qtd: ${p.quantity} | Local: ${p.storage}`);
+                lines.push(`   Validade: ${formatDateBR(p.expiryDate)} (${p.status.label}) | ${extras.join(' | ')}`);
             });
 
             return lines.join('\n');
@@ -1417,7 +1471,7 @@
         }
 
         function sendAlertEmail() {
-            const subject = `Alerta de Validade de Produtos - ${formatDateBR(getTodayISO())}`;
+            const subject = `Alerta de Validade Pro - ${formatDateBR(getTodayISO())}`;
             const body = buildAlertTextReport().replace(/\*/g, '');
             window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         }
@@ -1450,7 +1504,7 @@
                     const msg = critical.length > 0
                         ? `Existem ${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento!`
                         : 'Notificações ativadas! Você será avisado quando houver produtos próximos do vencimento.';
-                    new Notification('ValidadeSmart - Alerta de Validade', { body: msg });
+                    new Notification('ValidadeSmart Pro - Alerta de Validade', { body: msg });
                     showToast('Notificação enviada com sucesso!', 'success');
                 } else {
                     showToast('Permissão de notificação negada no navegador.', 'warning');
@@ -1462,7 +1516,7 @@
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
             const critical = getCriticalProducts();
             if (critical.length > 0) {
-                new Notification('ValidadeSmart - Atenção', {
+                new Notification('ValidadeSmart Pro - Atenção', {
                     body: `${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento.`
                 });
             }
@@ -1629,7 +1683,6 @@
             const indicator = document.getElementById('networkLoadingIndicator');
             const nameInput = document.getElementById('productName');
 
-            // 1. Consulta instantânea no catálogo local (funciona 100% offline)
             const localMatch = lookupLocalCatalog(barcodeVal);
             let filledFromLocal = false;
             if (localMatch) {
@@ -1643,7 +1696,6 @@
                 }
             }
 
-            // Se estiver offline, encerra rápido sem esperar rede
             if (navigator.onLine === false) {
                 if (filledFromLocal) {
                     showToast('Dados preenchidos pelo catálogo local (modo offline).', 'success');
@@ -1838,11 +1890,13 @@
             const standardStorages = ['Gôndola', 'Estoque / Depósito', 'Terminal de Rebaixa', 'Câmara Fria'];
 
             if (productToEdit) {
-                document.getElementById('modalTitle').textContent = 'Editar Produto';
+                document.getElementById('modalTitle').textContent = 'Editar Produto (Pro)';
                 document.getElementById('productId').value = productToEdit.id;
                 document.getElementById('barcode').value = productToEdit.barcode || '';
                 document.getElementById('internalCode').value = productToEdit.internalCode || '';
                 document.getElementById('productName').value = productToEdit.name || '';
+                document.getElementById('batchCode').value = productToEdit.batchCode || '';
+                document.getElementById('unitPrice').value = productToEdit.unitPrice !== undefined && productToEdit.unitPrice !== null ? productToEdit.unitPrice : '';
                 document.getElementById('expiryDate').value = productToEdit.expiryDate || '';
                 document.getElementById('quantity').value = productToEdit.quantity || 1;
                 document.getElementById('entryDate').value = productToEdit.entryDate || getTodayISO();
@@ -1861,14 +1915,14 @@
                     setPreviewPhoto(productToEdit.photo, 'Foto salva no cadastro.');
                 }
             } else {
-                document.getElementById('modalTitle').textContent = 'Cadastrar Produto';
+                document.getElementById('modalTitle').textContent = 'Cadastrar Produto (Pro)';
                 document.getElementById('productId').value = '';
                 document.getElementById('entryDate').value = getTodayISO();
                 document.getElementById('storageSelect').value = 'Gôndola';
                 toggleCustomStorage();
 
                 const nextNum = String(products.length + 1).padStart(3, '0');
-                document.getElementById('internalCode').value = `PROD-${nextNum}`;
+                document.getElementById('internalCode').value = `PRO-${nextNum}`;
             }
 
             document.getElementById('productModal').classList.remove('hidden');
@@ -1886,6 +1940,9 @@
             const barcode = document.getElementById('barcode').value.trim();
             const internalCode = document.getElementById('internalCode').value.trim();
             const name = document.getElementById('productName').value.trim();
+            const batchCode = document.getElementById('batchCode').value.trim();
+            const rawPrice = document.getElementById('unitPrice').value.trim();
+            const unitPrice = rawPrice === '' ? '' : Math.max(0, parseFloat(rawPrice.replace(',', '.')) || 0);
             const expiryDate = document.getElementById('expiryDate').value;
             const quantity = Math.max(1, parseInt(document.getElementById('quantity').value, 10) || 1);
             const entryDate = document.getElementById('entryDate').value;
@@ -1909,6 +1966,8 @@
                         barcode,
                         internalCode,
                         name,
+                        batchCode,
+                        unitPrice,
                         photo: currentPhotoData,
                         expiryDate,
                         quantity,
@@ -1921,10 +1980,12 @@
                 }
             } else {
                 const newProduct = {
-                    id: 'prod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    id: 'prod_pro_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                     barcode,
                     internalCode,
                     name,
+                    batchCode,
+                    unitPrice,
                     photo: currentPhotoData,
                     expiryDate,
                     quantity,
@@ -1993,7 +2054,7 @@
             }
             openConfirmModal(
                 'Limpar Todos os Dados',
-                'Esta ação apagará todos os produtos cadastrados neste dispositivo. Continuar?',
+                'Esta ação apagará todos os produtos cadastrados neste dispositivo no ValidadeSmart Pro. Continuar?',
                 () => {
                     products = [];
                     saveProductsToStorage();
@@ -2007,10 +2068,12 @@
             const today = getTodayISO();
             const samples = [
                 {
-                    id: 'sample_1',
+                    id: 'sample_pro_1',
                     barcode: '7891000100103',
-                    internalCode: 'MER-101',
+                    internalCode: 'PRO-101',
                     name: 'Leite Integral UHT 1L',
+                    batchCode: 'L101-A',
+                    unitPrice: 5.49,
                     photo: '',
                     expiryDate: addDaysISO(-2),
                     quantity: 8,
@@ -2020,10 +2083,12 @@
                     createdAt: Date.now() - 3000
                 },
                 {
-                    id: 'sample_2',
+                    id: 'sample_pro_2',
                     barcode: '7891910000197',
-                    internalCode: 'MER-102',
+                    internalCode: 'PRO-102',
                     name: 'Iogurte Natural Integral 170g',
+                    batchCode: 'L204-B',
+                    unitPrice: 3.89,
                     photo: '',
                     expiryDate: addDaysISO(5),
                     quantity: 24,
@@ -2033,10 +2098,12 @@
                     createdAt: Date.now() - 2000
                 },
                 {
-                    id: 'sample_3',
+                    id: 'sample_pro_3',
                     barcode: '7896004006253',
-                    internalCode: 'MER-103',
+                    internalCode: 'PRO-103',
                     name: 'Biscoito Recheado Chocolate 130g',
+                    batchCode: 'L309-C',
+                    unitPrice: 2.99,
                     photo: '',
                     expiryDate: addDaysISO(12),
                     quantity: 15,
@@ -2046,10 +2113,12 @@
                     createdAt: Date.now() - 1000
                 },
                 {
-                    id: 'sample_4',
+                    id: 'sample_pro_4',
                     barcode: '7891000053508',
-                    internalCode: 'MER-104',
+                    internalCode: 'PRO-104',
                     name: 'Café Torrado e Moído 500g',
+                    batchCode: 'L412-D',
+                    unitPrice: 18.90,
                     photo: '',
                     expiryDate: addDaysISO(95),
                     quantity: 40,
@@ -2064,7 +2133,7 @@
             products = [...samples, ...products];
             saveProductsToStorage();
             renderProducts();
-            showToast('Produtos de exemplo adicionados!', 'success');
+            showToast('Produtos de exemplo (Pro) adicionados!', 'success');
         }
 
         // ==========================================
@@ -2102,7 +2171,7 @@
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(15);
             doc.setFont('helvetica', 'bold');
-            doc.text('ValidadeSmart - Relatório de Controle de Validade', 14, 14);
+            doc.text('ValidadeSmart Pro - Relatório de Controle de Validade', 14, 14);
 
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
@@ -2121,12 +2190,13 @@
                 return [
                     p.internalCode || '-',
                     p.barcode || '-',
+                    p.batchCode || '-',
                     p.name || '-',
                     formatDateBR(p.expiryDate),
                     st.label,
                     String(p.quantity || 1),
+                    formatPriceBRL(p.unitPrice),
                     p.storage || '-',
-                    formatDateBR(p.entryDate),
                     p.notes || '-'
                 ];
             });
@@ -2136,18 +2206,19 @@
                 head: [[
                     'Cód. Interno',
                     'Cód. Barras',
+                    'Lote',
                     'Produto',
                     'Validade',
                     'Status',
                     'Qtd.',
+                    'Preço',
                     'Armazenamento',
-                    'Preenchimento',
                     'Observação'
                 ]],
                 body: tableRows,
                 styles: {
                     fontSize: 8,
-                    cellPadding: 2.5,
+                    cellPadding: 2.2,
                     valign: 'middle'
                 },
                 headStyles: {
@@ -2156,18 +2227,19 @@
                     fontStyle: 'bold'
                 },
                 columnStyles: {
-                    0: { cellWidth: 24 },
-                    1: { cellWidth: 28 },
-                    2: { cellWidth: 52 },
-                    3: { cellWidth: 22 },
-                    4: { cellWidth: 32 },
-                    5: { cellWidth: 14, halign: 'center' },
-                    6: { cellWidth: 32 },
-                    7: { cellWidth: 22 },
-                    8: { cellWidth: 'auto' }
+                    0: { cellWidth: 22 },
+                    1: { cellWidth: 26 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 46 },
+                    4: { cellWidth: 20 },
+                    5: { cellWidth: 30 },
+                    6: { cellWidth: 12, halign: 'center' },
+                    7: { cellWidth: 20, halign: 'right' },
+                    8: { cellWidth: 28 },
+                    9: { cellWidth: 'auto' }
                 },
                 didParseCell: function (data) {
-                    if (data.section === 'body' && data.column.index === 4) {
+                    if (data.section === 'body' && data.column.index === 5) {
                         const rowProduct = list[data.row.index];
                         if (rowProduct) {
                             const st = getExpiryStatus(rowProduct.expiryDate);
@@ -2185,7 +2257,7 @@
                 }
             });
 
-            const nomeArquivo = `controle-validade-${getTodayISO()}-${getTimeStampSuffix()}.pdf`;
+            const nomeArquivo = `controle-validade-pro-${getTodayISO()}-${getTimeStampSuffix()}.pdf`;
             await guardarPdfRelatorio(doc, nomeArquivo);
         }
 
@@ -2232,223 +2304,228 @@
                 }
             }
         }
-const CHAVE_PRODUTOS_BACKUP = 'validadeSmart_products_v2';
 
-function notificarBackup(mensagem, tipo = 'info') {
-  if (typeof showToast === 'function') {
-    showToast(mensagem, tipo);
-  } else {
-    alert(mensagem);
-  }
-}
-async function salvarBackupEmDocumentos(nomeArquivo, jsonString) {
-  const cap = window.Capacitor;
-  const Filesystem = cap && cap.Plugins && cap.Plugins.Filesystem;
-  const isNative = cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform();
+        function notificarBackup(mensagem, tipo = 'info') {
+            if (typeof showToast === 'function') {
+                showToast(mensagem, tipo);
+            } else {
+                alert(mensagem);
+            }
+        }
 
-  if (isNative && Filesystem) {
-    const bytes = new TextEncoder().encode(jsonString);
-    let binario = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binario += String.fromCharCode(bytes[i]);
-    }
-    const base64Data = btoa(binario);
+        async function salvarBackupEmDocumentos(nomeArquivo, jsonString) {
+            const cap = window.Capacitor;
+            const Filesystem = cap && cap.Plugins && cap.Plugins.Filesystem;
+            const isNative = cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform();
 
-    await Filesystem.writeFile({
-      path: nomeArquivo,
-      data: base64Data,
-      directory: 'DOCUMENTS',
-      recursive: true
-    });
+            if (isNative && Filesystem) {
+                const bytes = new TextEncoder().encode(jsonString);
+                let binario = '';
+                for (let i = 0; i < bytes.length; i++) {
+                    binario += String.fromCharCode(bytes[i]);
+                }
+                const base64Data = btoa(binario);
 
-    return { salvoEmDocumentos: true };
-  }
+                await Filesystem.writeFile({
+                    path: nomeArquivo,
+                    data: base64Data,
+                    directory: 'DOCUMENTS',
+                    recursive: true
+                });
 
-  const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nomeArquivo;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                return { salvoEmDocumentos: true };
+            }
 
-  return { salvoEmDocumentos: false };
-}
+            const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = nomeArquivo;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-async function exportarBackupJSON() {
-  try {
-    const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
-    const produtos = bruto ? JSON.parse(bruto) : [];
+            return { salvoEmDocumentos: false };
+        }
 
-    if (!Array.isArray(produtos) || produtos.length === 0) {
-      notificarBackup('Não há produtos cadastrados para exportar no backup.', 'warning');
-      return;
-    }
+        async function exportarBackupJSON() {
+            try {
+                const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
+                const produtos = bruto ? JSON.parse(bruto) : [];
 
-    const payload = {
-      app: 'ValidadeSmart',
-      versaoApp: '1.0.10',
-      exportadoEm: new Date().toISOString(),
-      totalItens: produtos.length,
-      produtos
-    };
+                if (!Array.isArray(produtos) || produtos.length === 0) {
+                    notificarBackup('Não há produtos cadastrados para exportar no backup.', 'warning');
+                    return;
+                }
 
-    const jsonString = JSON.stringify(payload, null, 2);
-    const dataHoje = getTodayISO();
-    const nomeArquivo = `validadesmart-backup-${dataHoje}-${getTimeStampSuffix()}.json`;
+                const payload = {
+                    app: 'ValidadeSmart Pro',
+                    versaoApp: '1.0.0-pro',
+                    exportadoEm: new Date().toISOString(),
+                    totalItens: produtos.length,
+                    produtos
+                };
 
-    const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
+                const jsonString = JSON.stringify(payload, null, 2);
+                const dataHoje = getTodayISO();
+                const nomeArquivo = `validadesmart-pro-backup-${dataHoje}-${getTimeStampSuffix()}.json`;
 
-    if (resultado.salvoEmDocumentos) {
-      notificarBackup(`Backup salvo em Documentos (${nomeArquivo})!`, 'success');
-    } else {
-      notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
-    }
-  } catch (erro) {
-    console.error('Erro ao exportar backup JSON:', erro);
-    notificarBackup('Erro ao gerar o arquivo de backup.', 'error');
-  }
-}
+                const resultado = await salvarBackupEmDocumentos(nomeArquivo, jsonString);
 
-function restaurarBackupJSON(event) {
-  const arquivo = event.target.files && event.target.files[0];
-  if (!arquivo) return;
+                if (resultado.salvoEmDocumentos) {
+                    notificarBackup(`Backup salvo em Documentos (${nomeArquivo})!`, 'success');
+                } else {
+                    notificarBackup(`Backup gerado: ${nomeArquivo} (${produtos.length} itens).`, 'success');
+                }
+            } catch (erro) {
+                console.error('Erro ao exportar backup JSON:', erro);
+                notificarBackup('Erro ao gerar o arquivo de backup.', 'error');
+            }
+        }
 
-  const leitor = new FileReader();
+        function restaurarBackupJSON(event) {
+            const arquivo = event.target.files && event.target.files[0];
+            if (!arquivo) return;
 
-  leitor.onload = function (e) {
-    try {
-      const conteudo = JSON.parse(e.target.result);
-      const listaProdutos = Array.isArray(conteudo)
-        ? conteudo
-        : Array.isArray(conteudo?.produtos)
-          ? conteudo.produtos
-          : null;
+            const leitor = new FileReader();
 
-      if (!listaProdutos) {
-        notificarBackup('Arquivo de backup inválido ou incompatível.', 'error');
-        return;
-      }
+            leitor.onload = function (e) {
+                try {
+                    const conteudo = JSON.parse(e.target.result);
+                    const listaProdutos = Array.isArray(conteudo)
+                        ? conteudo
+                        : Array.isArray(conteudo?.produtos)
+                            ? conteudo.produtos
+                            : null;
 
-      const confirmar = confirm(
-        `Restaurar ${listaProdutos.length} produto(s) do backup? Isso substituirá a lista atual salva neste aparelho.`
-      );
-      if (!confirmar) return;
+                    if (!listaProdutos) {
+                        notificarBackup('Arquivo de backup inválido ou incompatível.', 'error');
+                        return;
+                    }
 
-      localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(listaProdutos));
-      loadProductsFromStorage();
-      notificarBackup('Backup restaurado com sucesso! Recarregando lista...', 'success');
+                    const confirmar = confirm(
+                        `Restaurar ${listaProdutos.length} produto(s) do backup? Isso substituirá a lista atual salva neste aparelho no ValidadeSmart Pro.`
+                    );
+                    if (!confirmar) return;
 
-      if (typeof renderProducts === 'function') {
-        renderProducts();
-      } else {
-        location.reload();
-      }
-    } catch (erro) {
-      console.error('Erro ao restaurar backup JSON:', erro);
-      notificarBackup('Não foi possível ler o arquivo JSON selecionado.', 'error');
-    } finally {
-      event.target.value = '';
-    }
-  };
+                    localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(listaProdutos));
+                    loadProductsFromStorage();
+                    notificarBackup('Backup restaurado com sucesso! Recarregando lista...', 'success');
 
-  leitor.readAsText(arquivo, 'utf-8');
-}
-function gerarChaveProdutoUnico(item) {
-  if (!item || typeof item !== 'object') return '';
+                    if (typeof renderProducts === 'function') {
+                        renderProducts();
+                    } else {
+                        location.reload();
+                    }
+                } catch (erro) {
+                    console.error('Erro ao restaurar backup JSON:', erro);
+                    notificarBackup('Não foi possível ler o arquivo JSON selecionado.', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
 
-  const codigo = String(
-    item.codigo ?? item.barcode ?? item.ean ?? item.sku ?? ''
-  ).trim().toLowerCase();
+            leitor.readAsText(arquivo, 'utf-8');
+        }
 
-  const nome = String(
-    item.nome ?? item.produto ?? item.descricao ?? ''
-  ).trim().toLowerCase();
+        function gerarChaveProdutoUnico(item) {
+            if (!item || typeof item !== 'object') return '';
 
-  const validade = String(
-    item.validade ?? item.dataValidade ?? item.vencimento ?? ''
-  ).trim().toLowerCase();
+            const codigo = String(
+                item.codigo ?? item.barcode ?? item.ean ?? item.sku ?? ''
+            ).trim().toLowerCase();
 
-  if (codigo || nome || validade) {
-    return `${codigo}|${nome}|${validade}`;
-  }
+            const nome = String(
+                item.nome ?? item.produto ?? item.descricao ?? ''
+            ).trim().toLowerCase();
 
-  if (item.id !== undefined && item.id !== null) {
-    return `id:${String(item.id).trim().toLowerCase()}`;
-  }
+            const validade = String(
+                item.validade ?? item.dataValidade ?? item.vencimento ?? ''
+            ).trim().toLowerCase();
 
-  return JSON.stringify(item);
-}
+            const lote = String(
+                item.batchCode ?? item.lote ?? ''
+            ).trim().toLowerCase();
 
-function deduplificarListaProdutos(lista) {
-  const vistos = new Set();
-  const unicos = [];
-  let removidos = 0;
+            if (codigo || nome || validade || lote) {
+                return `${codigo}|${nome}|${validade}|${lote}`;
+            }
 
-  for (const item of lista) {
-    const chave = gerarChaveProdutoUnico(item);
-    if (!chave) {
-      unicos.push(item);
-      continue;
-    }
+            if (item.id !== undefined && item.id !== null) {
+                return `id:${String(item.id).trim().toLowerCase()}`;
+            }
 
-    if (vistos.has(chave)) {
-      removidos++;
-    } else {
-      vistos.add(chave);
-      unicos.push(item);
-    }
-  }
+            return JSON.stringify(item);
+        }
 
-  return { unicos, removidos };
-}
+        function deduplificarListaProdutos(lista) {
+            const vistos = new Set();
+            const unicos = [];
+            let removidos = 0;
 
-function limparDuplicadosProdutos(silencioso = false) {
-  try {
-    const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
-    const produtos = bruto ? JSON.parse(bruto) : [];
+            for (const item of lista) {
+                const chave = gerarChaveProdutoUnico(item);
+                if (!chave) {
+                    unicos.push(item);
+                    continue;
+                }
 
-    if (!Array.isArray(produtos) || produtos.length === 0) {
-      if (!silencioso) {
-        notificarBackup('Não há produtos para verificar duplicados.', 'info');
-      }
-      return 0;
-    }
+                if (vistos.has(chave)) {
+                    removidos++;
+                } else {
+                    vistos.add(chave);
+                    unicos.push(item);
+                }
+            }
 
-    const { unicos, removidos } = deduplificarListaProdutos(produtos);
+            return { unicos, removidos };
+        }
 
-    if (removidos === 0) {
-      if (!silencioso) {
-        notificarBackup('Nenhum produto duplicado encontrado.', 'info');
-      }
-      return 0;
-    }
+        function limparDuplicadosProdutos(silencioso = false) {
+            try {
+                const bruto = localStorage.getItem(CHAVE_PRODUTOS_BACKUP);
+                const produtos = bruto ? JSON.parse(bruto) : [];
 
-    localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(unicos));
-    loadProductsFromStorage();
+                if (!Array.isArray(produtos) || produtos.length === 0) {
+                    if (!silencioso) {
+                        notificarBackup('Não há produtos para verificar duplicados.', 'info');
+                    }
+                    return 0;
+                }
 
-    if (typeof renderProducts === 'function') {
-      renderProducts();
-    }
+                const { unicos, removidos } = deduplificarListaProdutos(produtos);
 
-    if (!silencioso) {
-      notificarBackup(`${removidos} duplicado(s) removido(s). Total: ${unicos.length} itens.`, 'success');
-    }
+                if (removidos === 0) {
+                    if (!silencioso) {
+                        notificarBackup('Nenhum produto duplicado encontrado.', 'info');
+                    }
+                    return 0;
+                }
 
-    return removidos;
-  } catch (erro) {
-    console.error('Erro ao limpar duplicados:', erro);
-    if (!silencioso) {
-      notificarBackup('Erro ao limpar produtos duplicados.', 'error');
-    }
-    return 0;
-  }
-}
+                localStorage.setItem(CHAVE_PRODUTOS_BACKUP, JSON.stringify(unicos));
+                loadProductsFromStorage();
+
+                if (typeof renderProducts === 'function') {
+                    renderProducts();
+                }
+
+                if (!silencioso) {
+                    notificarBackup(`${removidos} duplicado(s) removido(s). Total: ${unicos.length} itens.`, 'success');
+                }
+
+                return removidos;
+            } catch (erro) {
+                console.error('Erro ao limpar duplicados:', erro);
+                if (!silencioso) {
+                    notificarBackup('Erro ao limpar produtos duplicados.', 'error');
+                }
+                return 0;
+            }
+        }
     </script>
 <footer class="mt-8 mb-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 select-none">
-  <p class="font-medium text-slate-500">ValidadeSmart <span id="appVersionBadge">v1.0.10</span></p>
+  <p class="font-medium text-slate-500">ValidadeSmart Pro <span id="appVersionBadge">v1.0.0-pro</span></p>
   <p class="mt-0.5">&copy; 2026 Desenvolvido por Ariovaldo</p>
 </footer>
 </body>
