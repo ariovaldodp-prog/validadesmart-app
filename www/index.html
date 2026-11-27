@@ -1310,7 +1310,7 @@
                                 <div>
                                     <div class="flex items-center justify-between gap-2 font-mono">
                                         <span class="bg-slate-100 px-2 py-0.5 rounded text-sm font-bold text-slate-900">${escapeHTML(p.internalCode)}</span>
-                                        ${p.barcode ? `<button type="button" onclick="openBarcodeVisualModal('${escapeHTML(p.barcode)}', '${escapeHTML(p.name)}')" class="truncate text-sm font-bold tracking-wide text-slate-900 underline decoration-dotted hover:text-amber-700" title="Ver código de barras gráfico"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</button>` : ''}
+                                        ${p.barcode ? `<button type="button" onclick="event.stopPropagation(); openBarcodeVisualModal('${escapeHTML(p.barcode)}', '${escapeHTML(p.name)}')" class="truncate text-sm font-bold tracking-wide text-slate-900 underline decoration-dotted hover:text-amber-700" title="Ver código de barras gráfico"><i class="fa-solid fa-barcode mr-1"></i>${escapeHTML(p.barcode)}</button>` : ''}
                                     </div>
                                     <h3 class="font-bold text-slate-800 text-sm sm:text-base mt-1.5 line-clamp-2" title="${escapeHTML(p.name)}">
                                         ${escapeHTML(p.name)}
@@ -1525,23 +1525,38 @@
         }
 
         function requestAndTestBrowserNotification() {
-            if (!('Notification' in window)) {
-                showToast('Este navegador não suporta notificações nativas.', 'warning');
-                return;
-            }
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    const critical = getCriticalProducts();
-                    const msg = critical.length > 0
-                        ? `Existem ${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento!`
-                        : 'Notificações ativadas! Você será avisado quando houver produtos próximos do vencimento.';
-                    new Notification('ValidadeSmart Pro - Alerta de Validade', { body: msg });
-                    showToast('Notificação enviada com sucesso!', 'success');
-                } else {
-                    showToast('Permissão de notificação negada no navegador.', 'warning');
-                }
-            });
-        }
+  const critical = typeof getCriticalProducts === 'function' ? getCriticalProducts() : [];
+  const msg = critical.length > 0
+    ? `Existem ${critical.length} produto(s) vencido(s) ou próximo(s) do vencimento!`
+    : 'Alertas verificados: nenhum produto crítico no momento.';
+
+  if (!('Notification' in window) || typeof Notification.requestPermission !== 'function') {
+    if (typeof showToast === 'function') {
+      showToast(msg, critical.length > 0 ? 'warning' : 'success');
+    }
+    alert(`ValidadeSmart Pro - Alerta de Validade\n\n${msg}`);
+    return;
+  }
+
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      new Notification('ValidadeSmart Pro - Alerta de Validade', { body: msg });
+      if (typeof showToast === 'function') {
+        showToast('Notificação enviada com sucesso!', 'success');
+      }
+    } else {
+      if (typeof showToast === 'function') {
+        showToast(msg, 'warning');
+      }
+      alert(`ValidadeSmart Pro - Alerta de Validade\n\n${msg}`);
+    }
+  }).catch(() => {
+    if (typeof showToast === 'function') {
+      showToast(msg, 'warning');
+    }
+    alert(`ValidadeSmart Pro - Alerta de Validade\n\n${msg}`);
+  });
+}
 
         function checkAndTriggerAutoNotification() {
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -2554,17 +2569,44 @@
                 return 0;
             }
         }
- function openBarcodeVisualModal(code, productName) {
+ const CODE128_PATTERNS = [
+  [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],[1,3,1,2,2,2],
+  [1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],[2,2,1,3,1,2],[2,3,1,2,1,2],
+  [1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],[1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],
+  [2,2,3,2,1,1],[2,2,1,1,3,2],[2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],
+  [3,1,1,2,2,2],[3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],
+  [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3],[1,3,1,3,2,1],
+  [1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3],[2,3,1,1,1,3],[2,3,1,3,1,1],
+  [1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1],[1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],
+  [3,1,3,1,2,1],[2,1,1,3,3,1],[2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],
+  [3,1,1,1,2,3],[3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1],
+  [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2],[1,2,1,1,2,4],
+  [1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4],[1,1,2,4,1,2],[1,2,2,1,1,4],
+  [1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1],[2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],
+  [2,4,1,1,1,2],[1,3,4,1,1,1],[1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],
+  [1,2,4,1,1,2],[1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1],
+  [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],[1,1,4,1,1,3],
+  [1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],[1,1,4,1,3,1],[3,1,1,1,4,1],
+  [4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],[2,1,1,2,3,2],[2,3,3,1,1,1,2]
+];
+
+function openBarcodeVisualModal(code, productName) {
   const cleanCode = String(code || '').trim();
   if (!cleanCode) return;
+  const modal = document.getElementById('barcodeVisualModal');
+  if (!modal) return;
   document.getElementById('barcodeModalTitle').textContent = productName || 'Código de Barras';
   document.getElementById('barcodeModalCodeText').textContent = cleanCode;
-  document.getElementById('barcodeVisualModal').classList.remove('hidden');
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
   drawBarcodeGraphic(document.getElementById('barcodeGraphicCanvas'), cleanCode);
 }
 
 function closeBarcodeVisualModal() {
-  document.getElementById('barcodeVisualModal').classList.add('hidden');
+  const modal = document.getElementById('barcodeVisualModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
 }
 
 function drawBarcodeGraphic(canvas, code) {
@@ -2573,30 +2615,43 @@ function drawBarcodeGraphic(canvas, code) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const clean = String(code).replace(/[^0-9A-Za-z-]/g, '') || '0000000000000';
-  const pattern = [2, 1, 1, 2];
-  for (let i = 0; i < clean.length; i++) {
-    const charCode = clean.charCodeAt(i);
-    pattern.push((charCode % 3) + 1);
-    pattern.push(((charCode >> 1) % 2) + 1);
+  const ascii = String(code).replace(/[^\x20-\x7E]/g, '');
+  if (!ascii) return;
+
+  const codes = [104];
+  let checksum = 104;
+  for (let i = 0; i < ascii.length; i++) {
+    const val = ascii.charCodeAt(i) - 32;
+    const safeVal = val >= 0 && val <= 94 ? val : 16;
+    codes.push(safeVal);
+    checksum += safeVal * (i + 1);
   }
-  pattern.push(2, 1, 2);
+  codes.push(checksum % 103);
+  codes.push(106);
 
-  const totalUnits = pattern.reduce((sum, w) => sum + w, 0) + 16;
-  const unitWidth = Math.max(1.5, canvas.width / totalUnits);
-  let x = (canvas.width - totalUnits * unitWidth) / 2;
-  const topY = 12;
-  const barHeight = canvas.height - 24;
-
-  ctx.fillStyle = '#0f172a';
-  pattern.forEach((weight, idx) => {
-    const widthPx = weight * unitWidth;
-    if (idx % 2 === 0) {
-      ctx.fillRect(x, topY, widthPx, barHeight);
-    }
-    x += widthPx;
+  const bars = [];
+  codes.forEach((idx) => {
+    const pat = CODE128_PATTERNS[idx] || CODE128_PATTERNS[0];
+    pat.forEach((w) => bars.push(w));
   });
-}   
+  bars.push(2);
+
+  const quietZone = 16;
+  const totalModules = bars.reduce((a, b) => a + b, 0) + quietZone;
+  const modWidth = Math.max(1, (canvas.width - 16) / totalModules);
+  let x = (canvas.width - totalModules * modWidth) / 2;
+  const topY = 10;
+  const barHeight = canvas.height - 20;
+
+  ctx.fillStyle = '#000000';
+  bars.forEach((w, i) => {
+    const pxW = w * modWidth;
+    if (i % 2 === 0) {
+      ctx.fillRect(x, topY, pxW, barHeight);
+    }
+    x += pxW;
+  });
+}
 </script>
 <footer class="mt-8 mb-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-400 select-none">
   <p class="font-medium text-slate-500">ValidadeSmart Pro <span id="appVersionBadge">v1.0.0-pro</span></p>
